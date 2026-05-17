@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+    runs-on: ubuntu-24.04
+    name: build / ${{ matrix.compiler }} / ${{ matrix.build_type }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang
+
+      - name: Set compiler environment
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
+          else
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
+          fi
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DFIELDNAV_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --parallel 2
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    name: sanitizers (ASan + UBSan)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang
+
+      - name: Configure with sanitizers
+        run: |
+          CC=clang CXX=clang++ cmake -B build-asan -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DFIELDNAV_ENABLE_SANITIZERS=ON
+
+      - name: Build
+        run: cmake --build build-asan --parallel
+
+      - name: Test under sanitizers
+        run: ctest --test-dir build-asan --output-on-failure
+
+  format:
+    runs-on: ubuntu-24.04
+    name: clang-format check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Run clang-format --dry-run -Werror
+        run: |
+          find c_legacy core \
+            \( -name '*.c' -o -name '*.h' \
+               -o -name '*.cpp' -o -name '*.hpp' \) \
+            -exec clang-format --dry-run -Werror {} +

@@ -1,0 +1,24 @@
+name: Docs
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  doxygen:
+    runs-on: ubuntu-24.04
+    name: Build and deploy Doxygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install doxygen
+        run: sudo apt-get install -y doxygen graphviz
+      - name: Build docs
+        run: |
+          mkdir -p docs/doxygen
+          # Doxyfile is added in Phase 2; placeholder for now.
+          echo "Doxygen build placeholder until Doxyfile is added"
+      # - name: Deploy to gh-pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./docs/doxygen/html

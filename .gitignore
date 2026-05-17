@@ -1,0 +1,75 @@
+# Build directories
+build/
+build-*/
+out/
+cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Compiled object / binary
+*.o
+*.obj
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.app
+*.gch
+*.pch
+
+# Debug
+*.dSYM/
+*.su
+*.idb
+*.pdb
+core
+vgcore.*
+
+# Coverage
+*.gcno
+*.gcda
+*.gcov
+coverage/
+*.info
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.cache/
+.ccls-cache/
+
+# Doxygen output
+docs/doxygen/html/
+docs/doxygen/latex/
+docs/doxygen/xml/
+
+# Python (for tools/)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Datasets (large files)
+datasets/*
+!datasets/download.sh
+!datasets/.gitkeep
+!datasets/README.md
