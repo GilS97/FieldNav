@@ -6,11 +6,11 @@
  * The executable returns 0 on success, non-zero on failure (ctest convention).
  */
 
-#include "fieldnav/c_legacy/matrix.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "fieldnav/c_legacy/matrix.h"
 
 static int tests_run = 0;
 static int tests_failed = 0;
@@ -27,7 +27,7 @@ static int tests_failed = 0;
 #define ASSERT_NEAR(a, b, tol) ASSERT_TRUE(fabs((a) - (b)) < (tol))
 
 static void test_create_and_destroy(void) {
-    Matrix *m = matrix_create(3, 4);
+    Matrix* m = matrix_create(3, 4);
     ASSERT_TRUE(m != NULL);
     ASSERT_TRUE(m->rows == 3);
     ASSERT_TRUE(m->cols == 4);
@@ -45,7 +45,7 @@ static void test_create_and_destroy(void) {
 }
 
 static void test_get_set(void) {
-    Matrix *m = matrix_create(2, 2);
+    Matrix* m = matrix_create(2, 2);
     matrix_set(m, 0, 0, 1.5);
     matrix_set(m, 1, 1, 2.5);
     ASSERT_NEAR(matrix_get(m, 0, 0), 1.5, 1e-12);
@@ -58,19 +58,19 @@ static void test_get_set(void) {
 static void test_multiply_2x2(void) {
     /* [1 2] * [5 6] = [19 22]
        [3 4]   [7 8]   [43 50]                                           */
-    Matrix *a = matrix_create(2, 2);
+    Matrix* a = matrix_create(2, 2);
     matrix_set(a, 0, 0, 1);
     matrix_set(a, 0, 1, 2);
     matrix_set(a, 1, 0, 3);
     matrix_set(a, 1, 1, 4);
 
-    Matrix *b = matrix_create(2, 2);
+    Matrix* b = matrix_create(2, 2);
     matrix_set(b, 0, 0, 5);
     matrix_set(b, 0, 1, 6);
     matrix_set(b, 1, 0, 7);
     matrix_set(b, 1, 1, 8);
 
-    Matrix *c = matrix_mul(a, b);
+    Matrix* c = matrix_mul(a, b);
     ASSERT_TRUE(c != NULL);
     ASSERT_NEAR(matrix_get(c, 0, 0), 19.0, 1e-12);
     ASSERT_NEAR(matrix_get(c, 0, 1), 22.0, 1e-12);
@@ -83,23 +83,23 @@ static void test_multiply_2x2(void) {
 }
 
 static void test_multiply_dim_mismatch(void) {
-    Matrix *a = matrix_create(2, 3);
-    Matrix *b = matrix_create(2, 2);
-    Matrix *c = matrix_mul(a, b);
+    Matrix* a = matrix_create(2, 3);
+    Matrix* b = matrix_create(2, 2);
+    Matrix* c = matrix_mul(a, b);
     ASSERT_TRUE(c == NULL);
     matrix_destroy(a);
     matrix_destroy(b);
 }
 
 static void test_transpose(void) {
-    Matrix *m = matrix_create(2, 3);
+    Matrix* m = matrix_create(2, 3);
     for (size_t i = 0; i < 2; ++i) {
         for (size_t j = 0; j < 3; ++j) {
             matrix_set(m, i, j, (double)(i * 3 + j));
         }
     }
 
-    Matrix *t = matrix_transpose(m);
+    Matrix* t = matrix_transpose(m);
     ASSERT_TRUE(t != NULL);
     ASSERT_TRUE(t->rows == 3);
     ASSERT_TRUE(t->cols == 2);

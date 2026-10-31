@@ -5,7 +5,7 @@
 #include <fieldnav/sensor_utils/stats.hpp>
 #include <vector>
 
-// sensor_utils doit propager cxx_std_20 aux cibles qui le lient (le reste de FieldNav est en C++17).
+// sensor_utils doit propager cxx_std_20 aux cibles qui le lient (le reste de FieldNav : C++17).
 static_assert(__cplusplus >= 202002L, "fieldnav::sensor_utils doit propager cxx_std_20");
 
 namespace su = fieldnav::sensor_utils;
