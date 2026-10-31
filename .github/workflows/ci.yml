@@ -82,7 +82,7 @@ jobs:
 
       - name: Run clang-format --dry-run -Werror
         run: |
-          find c_legacy core \
+          find c_legacy libs \
             \( -name '*.c' -o -name '*.h' \
                -o -name '*.cpp' -o -name '*.hpp' \) \
             -exec clang-format --dry-run -Werror {} +
