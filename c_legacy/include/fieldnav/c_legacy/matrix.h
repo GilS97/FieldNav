@@ -19,7 +19,7 @@ extern "C" {
 typedef struct {
     size_t rows;
     size_t cols;
-    double *data; /**< Row-major storage, length = rows * cols. */
+    double* data; /**< Row-major storage, length = rows * cols. */
 } Matrix;
 
 /**
@@ -27,34 +27,34 @@ typedef struct {
  * @return pointer to the new matrix, or NULL on allocation failure
  *         or if rows == 0 || cols == 0. Caller must free with matrix_destroy.
  */
-Matrix *matrix_create(size_t rows, size_t cols);
+Matrix* matrix_create(size_t rows, size_t cols);
 
 /**
  * Free a matrix and its underlying storage. Safe to call with NULL.
  */
-void matrix_destroy(Matrix *m);
+void matrix_destroy(Matrix* m);
 
 /**
  * Read element at (row, col). No bounds checking.
  */
-double matrix_get(const Matrix *m, size_t row, size_t col);
+double matrix_get(const Matrix* m, size_t row, size_t col);
 
 /**
  * Write element at (row, col). No bounds checking.
  */
-void matrix_set(Matrix *m, size_t row, size_t col, double value);
+void matrix_set(Matrix* m, size_t row, size_t col, double value);
 
 /**
  * Multiply: result = a * b. Returns NULL on dimension mismatch
  * (a->cols != b->rows) or allocation failure.
  */
-Matrix *matrix_mul(const Matrix *a, const Matrix *b);
+Matrix* matrix_mul(const Matrix* a, const Matrix* b);
 
 /**
  * Transpose: result has shape (m->cols, m->rows). Returns NULL on allocation
  * failure.
  */
-Matrix *matrix_transpose(const Matrix *m);
+Matrix* matrix_transpose(const Matrix* m);
 
 #ifdef __cplusplus
 }

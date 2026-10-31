@@ -1,0 +1,605 @@
+{
+  "_commentaire": "Détail des tâches Cap 2027 (semaines du 20 oct. au 9 déc. 2026 + banc réel jusqu'au 13 fév. 2027). Une tâche existante est retrouvée par titre + date et ENRICHIE (pas dupliquée). Tous les champs sauf titre sont facultatifs ; un champ absent garde la valeur déjà en base. Importer APRÈS cap2027-donnees.json et cap2027-banc-reel.json.",
+  "type": "taches",
+  "items": [
+
+    {
+      "titre": "Geler FieldTelemetry : README « roadmap », archiver le dépôt",
+      "date": "2026-10-20", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "FieldTelemetry n'est plus un projet actif : son état et sa feuille de route sont écrits, le dépôt est en lecture seule, et la décision est tracée dans FieldNav.",
+      "contexte": "Tu es à l'étape 1/9 du cursus C++ bâti autour de FieldTelemetry. Ça ne sera pas fini en juin. La seule pièce réutilisable est sensor_utils (header-only C++23, validé). Ce n'est pas un abandon : c'est une fusion.",
+      "etapes": [
+        "Dans FieldTelemetry, créer ROADMAP.md : les 9 étapes du cursus, laquelle est faite, ce qui est gelé et pourquoi (3 lignes suffisent)",
+        "Dans README.md, ajouter en tête un bandeau « ⏸ Gelé le 2026-10-20 — sensor_utils vit désormais dans FieldNav »",
+        "Tagger l'état : git tag freeze-2026-10 && git push --tags",
+        "Sur GitHub : Settings → Archive this repository (réversible)",
+        "Dans FieldNav, créer docs/adr/0004-fusion-fieldtelemetry.md : contexte, décision, conséquences (format des 3 ADR existants)",
+        "Commit FieldNav « adr: fusion FieldTelemetry → sensor_utils devient un module »"
+      ],
+      "critere de fini": "Le dépôt FieldTelemetry est archivé avec un README qui dit où aller ; l'ADR 0004 existe dans FieldNav. Tu n'ouvriras plus FieldTelemetry avant juin.",
+      "livrables": ["ROADMAP.md + bandeau README dans FieldTelemetry", "Tag freeze-2026-10", "ADR 0004 dans FieldNav"]
+    },
+
+    {
+      "titre": "Importer sensor_utils dans FieldNav (module, pas sous-projet)",
+      "date": "2026-10-21", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "FieldNav utilise sensor_utils comme module interne, compilé et testé avec le reste.",
+      "contexte": "sensor_utils vit aujourd'hui dans FieldTelemetry (gelé). Il est header-only C++23 ; FieldNav est en C++17/20. Le plus simple est d'abaisser sensor_utils à C++20 plutôt que de monter tout FieldNav.",
+      "etapes": [
+        "Copier le dossier sensor_utils dans FieldNav/libs/sensor_utils (headers + tests + CMakeLists)",
+        "Dans son CMakeLists : add_library(sensor_utils INTERFACE) + target_include_directories(... INTERFACE include) + target_compile_features(sensor_utils INTERFACE cxx_std_20)",
+        "Compiler : repérer les constructions C++23 (std::expected, std::print, deducing this…) et les remplacer par des équivalents C++20 (std::optional + code d'erreur, fmt ou iostream)",
+        "Dans le CMakeLists racine : add_subdirectory(libs/sensor_utils), puis target_link_libraries(<cible navigation> PRIVATE sensor_utils)",
+        "Brancher les tests de sensor_utils dans le ctest de FieldNav (même add_test que les 14 gtests existants)",
+        "Vérifier que la CI GitHub Actions passe toujours (push sur une branche, regarder le run)"
+      ],
+      "critere de fini": "cmake --build && ctest passent sur une machine propre (CI verte) ; aucun include ne pointe vers FieldTelemetry ; grep -r C++23 dans libs/sensor_utils ne trouve plus rien.",
+      "livrables": ["Commit « libs: import sensor_utils (C++20) »", "Ligne dans le README : d'où vient le module"],
+      "liens": ["https://cmake.org/cmake/help/latest/command/add_subdirectory.html"]
+    },
+
+    {
+      "titre": "Ouvrir notes/veille.md et notes/sujets.md ; synthèse des 2 premiers articles",
+      "date": "2026-10-21", "projet": "recherche", "duree estimee": 30,
+      "objectif": "Les deux premières fiches de lecture existent, au format 5 lignes, et le fichier des sujets est amorcé.",
+      "contexte": "Le bloc Lecture de 07:00 lit ; le bloc du mercredi soir synthétise. Les deux fichiers sont ceux que Cap 2027 importe (voir samples/veille.md et samples/sujets.md pour le format exact).",
+      "etapes": "- [ ] Créer notes/veille.md avec en première ligne <!-- cap: veille -->\n- [ ] Fiche article 1 : ## Titre, puis auteurs, année, source, url, lu, problème, méthode, manque, lien FieldNav\n- [ ] Fiche article 2, même format\n- [ ] Créer notes/sujets.md avec <!-- cap: sujets --> et une première piste (## Titre, question, pourquoi ouvert, test FieldNav, score)\n- [ ] Importer veille.md dans Cap 2027 (onglet Import) et vérifier que les 2 fiches apparaissent « lues »",
+      "critere de fini": "veille.md s'importe dans Cap 2027 et montre 2 fiches lues ; sujets.md contient au moins 1 piste.",
+      "livrables": ["notes/veille.md (2 fiches)", "notes/sujets.md (1 piste)"]
+    },
+
+    {
+      "titre": "ADR : feature cible = suivre une ligne de culture avec odométrie + GPS bruité, export télémétrie, vidéo 30 s",
+      "date": "2026-10-22", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "La définition de « FieldNav fini » est écrite, bornée et non négociable jusqu'au 23 novembre.",
+      "contexte": "Le piège identifié : vouloir « bien structurer » le stack avant d'avancer. L'ADR sert de garde-fou : une feature de bout en bout, pas une architecture.",
+      "etapes": [
+        "Créer docs/adr/0005-feature-cible.md avec les sections Contexte / Décision / Hors périmètre / Conséquences",
+        "Décision, en 5 puces : (1) robot différentiel simulé, (2) odométrie + GPS bruité fusionnés, (3) suivi d'une ligne de culture droite puis légèrement courbe, (4) export télémétrie CSV/JSON, (5) vidéo 30 s + README",
+        "Hors périmètre, explicitement : lidar, vision, SLAM, demi-tour en bout de rang, multi-robots, Isaac Lab (MuJoCo seul)",
+        "Définir les métriques de succès : erreur latérale RMS < 15 cm sur 50 m avec GPS bruité à 1 m d'écart-type et 20 % de pertes",
+        "Lister les 4 jalons datés (26 oct, 2 nov, 9 nov, 16 nov) avec, pour chacun, une phrase « on sait que c'est fait quand… »",
+        "Ouvrir une issue GitHub par jalon (4 issues), fermer l'issue = jalon atteint"
+      ],
+      "critere de fini": "L'ADR est commité ; 4 issues existent ; tu peux dire en une phrase ce que tu ne feras PAS avant décembre.",
+      "livrables": ["docs/adr/0005-feature-cible.md", "4 issues GitHub « Jalon »"]
+    },
+
+    {
+      "titre": "Lister ce que le M2 exige pour le mémoire et l'article (format, dates, jury)",
+      "date": "2026-10-23", "projet": "memoire", "duree estimee": 50,
+      "objectif": "Une page notes/m2-exigences.md qui dit exactement quoi rendre, quand, à qui, et sous quel format — sans avoir à relire les documents de l'école.",
+      "contexte": "Le M2 ROC demande un mémoire et un article scientifique pour la soutenance de juin 2027. Les dates intermédiaires (choix du sujet, validation du tuteur académique, rendu) conditionnent tout le calendrier recherche.",
+      "etapes": [
+        "Retrouver le règlement / guide du mémoire ROC (plateforme pédagogique, mails de rentrée, syllabus de l'UA)",
+        "Extraire : nombre de pages, structure imposée, langue, format de l'article (nb de pages, gabarit IEEE/ACM/LNCS ?), critères de notation",
+        "Extraire les dates : déclaration du sujet, désignation du tuteur académique, rendus intermédiaires, dépôt final, soutenance, délai anti-plagiat",
+        "Identifier qui valide le sujet et à qui poser une question (nom, mail)",
+        "Noter les règles sur l'usage de l'IA et l'anti-plagiat (mêmes contraintes que le rapport M1)",
+        "Reporter chaque date dans Cap 2027 en jalon (projet memoire) si elle n'y est pas déjà"
+      ],
+      "critere de fini": "m2-exigences.md tient sur une page ; chaque date de l'école est un jalon dans Cap 2027 ; une question au responsable est envoyée si quelque chose manque.",
+      "livrables": ["notes/m2-exigences.md", "Jalons mémoire mis à jour (import ou saisie)"]
+    },
+
+    {
+      "titre": "Session longue : squelette du module odométrie + test gtest qui passe",
+      "date": "2026-10-24", "projet": "fieldnav", "duree estimee": 160,
+      "objectif": "Un module odometry compilé, testé, encore faux mais branché : l'API existe, un test vérifie un cas trivial.",
+      "contexte": "Samedi 2 × 80 min. Première brique de la feature cible. Le modèle : robot différentiel, entrée (v, ω) ou (vitesses roues), sortie pose (x, y, θ). On écrit l'API et un test AVANT le modèle complet.",
+      "etapes": [
+        "Bloc 1 — Créer src/odometry/{odometry.hpp,odometry.cpp} : struct Pose2D {x,y,theta}; class DiffDriveOdometry { void update(double v, double w, double dt); Pose2D pose() const; void reset(); }",
+        "Bloc 1 — Implémenter l'intégration d'Euler la plus simple (x += v cos θ dt ; y += v sin θ dt ; θ += ω dt, normalisé dans [-π, π])",
+        "Bloc 1 — Test gtest : v=1, ω=0, dt=1 pendant 10 pas → x≈10, y≈0 ; puis ω=π/2 pendant 1 s → θ≈π/2",
+        "Pause 20 min loin de l'écran",
+        "Bloc 2 — Test « cercle » : v=1, ω=1 pendant 2π s → retour près de l'origine (tolérance 5 cm avec dt=1e-3)",
+        "Bloc 2 — Ajouter le module dans CMake + ctest, CI verte",
+        "Bloc 2 — Journal : ce qui manque (modèle exact au lieu d'Euler ? bruit de roue ?) va dans l'issue du jalon, pas dans le code aujourd'hui"
+      ],
+      "critere de fini": "ctest affiche les nouveaux tests en PASS ; aucune autre partie du code n'a été touchée.",
+      "livrables": ["src/odometry/*", "tests/odometry_test.cpp", "Commit « odometry: squelette + tests »"],
+      "liens": ["https://google.github.io/googletest/primer.html"]
+    },
+
+    {
+      "titre": "Odométrie différentielle intégrée dans la boucle de sim",
+      "date": "2026-10-26", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "À chaque pas de simulation, l'odométrie est mise à jour à partir des vitesses roues simulées et publie une pose.",
+      "contexte": "Le module existe isolément (24 oct). Il faut l'alimenter par la sim (MuJoCo) : vitesses angulaires des roues → (v, ω) via rayon de roue r et entraxe L : v = r(ωd+ωg)/2 ; ω = r(ωd−ωg)/L.",
+      "etapes": [
+        "Repérer dans la boucle de sim l'endroit où les vitesses roues (ou la pose vraie) sont lisibles à chaque step",
+        "Ajouter un petit bruit multiplicatif sur les vitesses roues lues (ex. ±2 % gaussien) : c'est ce qui rend l'odométrie « réaliste » et fera dériver la pose",
+        "Appeler odometry.update(v, ω, dt) à chaque step ; exposer la pose estimée à côté de la pose vraie",
+        "Si ROS 2 est déjà branché : publier nav_msgs/Odometry sur /odom ; sinon, simple log dans une structure en mémoire pour l'instant",
+        "Lancer 60 s de ligne droite : vérifier que l'estimée dérive lentement (quelques dizaines de cm) et ne diverge pas",
+        "Commit"
+      ],
+      "critere de fini": "Un run de 60 s produit deux trajectoires (vraie / odométrie) qui s'écartent progressivement ; aucune NaN ; test de non-régression ajouté sur la conversion roues → (v, ω).",
+      "livrables": ["Boucle de sim avec odométrie", "Test de la conversion roues→(v,ω)"]
+    },
+
+    {
+      "titre": "Modèle de GPS bruité (biais + marche aléatoire + pertes)",
+      "date": "2026-10-27", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Un capteur GPS simulé, à 5 Hz, qui fournit une position bruitée, parfois absente, avec un biais qui dérive lentement.",
+      "contexte": "C'est le cœur du sujet n°1 (GNSS dégradé). Modèle volontairement simple : mesure = pose vraie + biais(t) + bruit blanc ; biais(t+1) = biais(t) + N(0, σ_rw) ; chaque mesure est perdue avec probabilité p.",
+      "etapes": [
+        "Créer src/sensors/gps_sim.hpp : struct GpsFix {x, y, valid}; class GpsSim { GpsSim(seed, sigma_noise, sigma_rw, p_loss, rate_hz); std::optional<GpsFix> sample(const Pose2D& truth, double t); }",
+        "Générateur aléatoire injecté (std::mt19937 avec seed) pour des runs reproductibles",
+        "Paramètres par défaut : σ_noise = 1,0 m ; σ_rw = 0,02 m/√s ; p_loss = 0,2 ; 5 Hz",
+        "Tests : (1) avec σ=0 et p=0, la mesure = vérité ; (2) sur 10 000 échantillons, l'écart-type empirique ≈ σ_noise à 10 % ; (3) taux de pertes ≈ p",
+        "Brancher dans la boucle de sim à côté de l'odométrie ; logguer les fixes valides",
+        "Ajouter un mode « trou GNSS » : aucune mesure entre t1 et t2 (servira à la figure du mémoire)"
+      ],
+      "critere de fini": "Tests PASS ; un run montre des points GPS dispersés autour de la vraie trajectoire avec un trou de 10 s ; seed fixée = même sortie à chaque exécution.",
+      "livrables": ["src/sensors/gps_sim.hpp", "tests/gps_sim_test.cpp"]
+    },
+
+    {
+      "titre": "Synthèse hebdo des articles ; sujets.md ≥ 5 pistes",
+      "date": "2026-10-28", "projet": "recherche", "duree estimee": 50,
+      "objectif": "Les 5–6 fiches de la semaine sont relues ; chaque « manque » repéré devient (ou alimente) une piste de sujet ; sujets.md en compte au moins 5.",
+      "contexte": "Un sujet de recherche naît du croisement de plusieurs « ce qui manque ». La colonne manque de veille.md est la matière première.",
+      "etapes": [
+        "Relire uniquement les lignes « manque » et « lien FieldNav » des fiches de la semaine",
+        "Regrouper les manques qui se ressemblent (post-it ou simple liste) ; chaque groupe = une piste potentielle",
+        "Pour chaque piste : ## Titre, question (une phrase interrogative), pourquoi ouvert (2 lignes), test FieldNav (ce que la sim permettrait de mesurer), score /10 au feeling",
+        "Compléter avec les 4 sujets déjà présents dans Cap 2027 s'ils ne sont pas dans le fichier (GNSS dégradé, télémétrie adaptative, RL embarqué, traçabilité IoT)",
+        "Réimporter sujets.md dans Cap 2027 ; vérifier le compteur",
+        "Noter dans le journal : quelle piste t'a le plus donné envie — c'est une donnée, pas une décision"
+      ],
+      "critere de fini": "L'onglet Recherche → Sujets affiche ≥ 5 pistes, chacune avec question et test FieldNav remplis.",
+      "livrables": ["notes/sujets.md (≥ 5 pistes)"]
+    },
+
+    {
+      "titre": "Fusion simple odométrie/GPS (filtre complémentaire) et courbe d'erreur",
+      "date": "2026-10-29", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Une estimée fusionnée qui vaut mieux que l'odométrie seule et que le GPS seul, et une première courbe d'erreur en fonction du temps.",
+      "contexte": "Pas de Kalman aujourd'hui : un filtre complémentaire suffit pour démontrer la feature. Quand un fix GPS valide arrive : estimée = (1−α)·estimée_odo + α·gps, puis l'odométrie repart de là. α ≈ 0,1–0,3. Le Kalman est une amélioration pour janvier, à écrire dans l'issue.",
+      "etapes": [
+        "Créer src/estimation/complementary.hpp : class ComplementaryFuser { void predict(v, ω, dt); void correct(const GpsFix&); Pose2D estimate(); }",
+        "Garder θ purement odométrique (le GPS ne donne pas le cap) ; ne corriger que x, y",
+        "Logger à chaque step : t, x_vrai, y_vrai, x_odo, y_odo, x_fus, y_fus, gps_valid",
+        "Calculer l'erreur euclidienne de chaque estimée vs vérité ; afficher RMS sur 60 s dans la console en fin de run",
+        "Comparer 3 runs : odométrie seule, GPS seul (dernier fix), fusion — la fusion doit gagner sur les deux",
+        "Test : avec GPS parfait, la fusion converge vers la vérité ; avec GPS absent, elle = odométrie"
+      ],
+      "critere de fini": "RMS_fusion < RMS_odo et RMS_fusion < RMS_gps sur le run de référence (seed fixée) ; valeurs notées dans le journal.",
+      "livrables": ["src/estimation/complementary.hpp", "Log CSV du run de référence", "3 RMS dans le journal"]
+    },
+
+    {
+      "titre": "Plan du mémoire v0 : intro, état de l'art, contribution, expériences, discussion",
+      "date": "2026-10-30", "projet": "memoire", "duree estimee": 50,
+      "objectif": "Un plan en 2 pages, titres + 3 puces par section, qui fera office de contrat avec le tuteur académique.",
+      "contexte": "Le sujet n'est pas encore choisi (13 nov.) : le plan v0 est donc écrit pour « navigation/télémétrie de robot de terrain sous contraintes » et sera resserré ensuite. Mieux vaut un plan faux tôt qu'un plan parfait tard.",
+      "etapes": [
+        "Créer memoire/plan.md ; reprendre la structure imposée relevée le 23 oct. si elle existe, sinon : Introduction / Contexte & état de l'art / Problème & contribution / Méthode / Expériences (sim, puis banc réel optionnel) / Discussion & limites / Conclusion & perspectives",
+        "Pour chaque section : 3 puces de ce qu'elle doit démontrer (pas de prose)",
+        "Section Expériences : lister les figures que tu veux (erreur vs temps, RMS vs σ_GPS, RMS vs taux de pertes, sim vs réel) — ce sont les runs à produire",
+        "Section État de l'art : 3 sous-thèmes et 2 articles déjà lus par sous-thème (depuis veille.md)",
+        "Estimer le nombre de pages par section pour tenir dans la limite",
+        "Noter 3 questions à poser au tuteur académique"
+      ],
+      "critere de fini": "plan.md existe, tient en 2 pages, et chaque section a ses 3 puces ; les figures prévues sont listées.",
+      "livrables": ["memoire/plan.md"]
+    },
+
+    {
+      "titre": "Session longue : scène de rang de culture dans la sim + trajectoire de référence",
+      "date": "2026-10-31", "projet": "fieldnav", "duree estimee": 160,
+      "objectif": "Une scène MuJoCo avec un rang de culture visible (obstacles simples) et une trajectoire de référence (liste de waypoints) stockée dans un fichier.",
+      "contexte": "Samedi 2 × 80 min. Le rang est un décor : des cylindres ou boîtes alignés tous les 30 cm sur 50 m, deux rangées espacées de 1,5 m. La trajectoire de référence est la ligne médiane — d'abord droite, puis avec une courbure douce.",
+      "etapes": [
+        "Bloc 1 — Écrire un script Python qui génère le fichier MJCF de la scène : sol, 2 rangées de géométries, paramètres (longueur, écartement, pas, courbure)",
+        "Bloc 1 — Générer la version droite (courbure 0) et vérifier visuellement dans le viewer MuJoCo",
+        "Bloc 1 — Écrire la trajectoire de référence dans data/reference_straight.csv (x, y tous les 10 cm)",
+        "Pause 20 min",
+        "Bloc 2 — Ajouter la courbure (arc de cercle de rayon 100 m) : scène + trajectoire reference_curved.csv",
+        "Bloc 2 — Charger le CSV côté C++ (petit loader + test : 500 points, monotone en abscisse curviligne)",
+        "Bloc 2 — Placer le robot au départ du rang, lancer 10 s, capture d'écran pour le journal"
+      ],
+      "critere de fini": "Deux scènes (droite, courbe) se chargent ; deux CSV de référence ; le loader est testé ; une capture d'écran existe.",
+      "livrables": ["scripts/gen_row_scene.py", "scenes/row_straight.xml, row_curved.xml", "data/reference_*.csv"],
+      "liens": ["https://mujoco.readthedocs.io/en/stable/XMLreference.html"]
+    },
+
+    {
+      "titre": "Détection de ligne de culture (version naïve : waypoints connus)",
+      "date": "2026-11-02", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Un composant « ligne à suivre » qui, à partir d'une pose, renvoie le point cible le plus proche et l'écart latéral — en lisant les waypoints connus (pas de perception).",
+      "contexte": "La vraie détection (vision/lidar) est hors périmètre. On simule une perception parfaite : la ligne est connue. Ça isole le problème qui t'intéresse : naviguer avec une pose incertaine.",
+      "etapes": [
+        "Créer src/path/path.hpp : class Path { Path(vector<Point>); size_t closestIndex(const Pose2D&); double lateralError(const Pose2D&); Point lookahead(const Pose2D&, double distance); }",
+        "closestIndex par recherche locale à partir du dernier index (O(1) amorti) plutôt que balayage complet",
+        "lateralError signée : produit vectoriel entre la tangente locale et le vecteur point→robot",
+        "lookahead : premier point à distance ≥ d le long du chemin depuis l'index courant",
+        "Tests : robot sur la ligne → erreur 0 ; décalé de 0,3 m à gauche → +0,3 ; lookahead à 1 m sur une ligne droite = (x+1, y)",
+        "Brancher dans la boucle : logger l'erreur latérale vraie à chaque step"
+      ],
+      "critere de fini": "Tests PASS ; le log contient l'erreur latérale ; sur un run en ligne droite sans contrôleur, l'erreur reste proche de 0 puis dérive (normal).",
+      "livrables": ["src/path/path.hpp", "tests/path_test.cpp"]
+    },
+
+    {
+      "titre": "Contrôleur de suivi de ligne (pure pursuit) sur la trajectoire de référence",
+      "date": "2026-11-03", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Le robot suit la ligne de référence en boucle fermée, à partir de la pose VRAIE (vérité terrain), sur la scène droite puis courbe.",
+      "contexte": "Pure pursuit : viser le point de lookahead, calculer la courbure κ = 2·sin(α)/L_d où α est l'angle entre le cap et la direction du point cible, puis ω = v·κ. Un seul paramètre à régler : la distance de lookahead.",
+      "etapes": [
+        "Créer src/control/pure_pursuit.hpp : struct Cmd {v, ω}; Cmd compute(const Pose2D& pose, const Path& path, double v_des, double lookahead)",
+        "Saturer ω (ex. ±1,5 rad/s) et v (0,5–1 m/s)",
+        "Test unitaire géométrique : robot à 1 m à gauche d'une ligne droite, cap parallèle → ω négatif (il tourne vers la ligne)",
+        "Boucle de sim : cmd = compute(pose_vraie…) → appliquer aux roues (inverse de la conversion du 26 oct.)",
+        "Run droit : erreur latérale doit converger vers 0 après un départ décalé de 0,5 m ; run courbe : erreur en régime permanent < 5 cm",
+        "Essayer lookahead 0,5 / 1 / 2 m ; noter dans le journal le meilleur compromis (oscillation vs retard)"
+      ],
+      "critere de fini": "Sur les deux scènes, départ décalé de 0,5 m, l'erreur latérale passe sous 5 cm en moins de 10 m et y reste.",
+      "livrables": ["src/control/pure_pursuit.hpp", "tests/pure_pursuit_test.cpp", "Valeur de lookahead retenue dans le journal"]
+    },
+
+    {
+      "titre": "Réduire à 3 sujets : question, pourquoi c'est ouvert, ce que FieldNav permet de tester (10 lignes chacun)",
+      "date": "2026-11-04", "projet": "recherche", "duree estimee": 50,
+      "objectif": "Trois sujets en shortlist, chacun écrit en 10 lignes qu'on peut coller dans un mail à un chercheur.",
+      "contexte": "Tu vas vouloir « lire encore quelques articles » avant de choisir. Non : on choisit le 4 novembre, même sans certitude. Le sujet final se décide en travaillant dessus et en parlant aux labos.",
+      "etapes": [
+        "Noter chaque piste de sujets.md sur 4 critères /5 : envie, faisabilité avec FieldNav d'ici mars, existence d'équipes en France/Europe, lien avec ton profil ROC/IoT",
+        "Garder les 3 meilleurs totaux ; passer les autres en statut ECARTE (pas supprimés)",
+        "Pour chacun des 3, réécrire en 10 lignes : question précise, pourquoi c'est encore ouvert (2 refs), ce que tu as déjà (FieldNav, MQTT, HeliosDB…), ce que tu testerais d'ici mars, quel type de labo",
+        "Mettre les 3 en statut SHORTLIST dans sujets.md et réimporter",
+        "Lire les 3 à voix haute : si tu n'arrives pas à expliquer la question en une phrase, elle n'est pas prête — reformuler",
+        "Journal : le sujet que tu choisirais si tu devais signer ce soir"
+      ],
+      "critere de fini": "Cap 2027 → Recherche → Sujets affiche « 3 en shortlist » ; chaque shortlist a ses 10 lignes.",
+      "livrables": ["notes/sujets.md (3 SHORTLIST, autres ECARTE)"]
+    },
+
+    {
+      "titre": "Suivi de ligne avec l'estimateur bruité au lieu de la vérité terrain",
+      "date": "2026-11-05", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Le contrôleur n'a plus accès à la pose vraie : il utilise l'estimée fusionnée. On mesure ce que ça coûte.",
+      "contexte": "C'est LE run qui donne un résultat : la même boucle qu'hier, mais compute(pose_estimée). L'écart entre les deux courbes d'erreur, c'est ta contribution en germe.",
+      "etapes": [
+        "Ajouter un paramètre de run : source de pose ∈ {truth, odom, fusion}",
+        "Lancer les 3 variantes sur la scène courbe, seed fixée, 50 m",
+        "Logger l'erreur latérale VRAIE (vs ligne) dans les 3 cas, même si le contrôleur croit autre chose",
+        "Calculer RMS et max de l'erreur latérale par variante ; attendu : truth < fusion < odom",
+        "Cas limite : trou GNSS de 10 s au milieu — observer la dérive puis le rattrapage",
+        "Si fusion diverge : réduire α ou le lookahead, noter ce qui a été changé"
+      ],
+      "critere de fini": "Tableau de 3 lignes (variante, RMS, max) dans le journal ; la variante fusion tient le rang (pas de sortie de la bande de 1,5 m) avec le trou GNSS.",
+      "livrables": ["Paramètre --pose-source", "Tableau RMS dans le journal + 3 CSV de run"]
+    },
+
+    {
+      "titre": "Mail à 2 profs IMERIR/CNAM : projet recherche + demande d'intro labo",
+      "date": "2026-11-06", "projet": "candidature", "duree estimee": 50,
+      "objectif": "Deux mails envoyés, courts, qui donnent envie de répondre et demandent une chose précise : une introduction.",
+      "contexte": "Un mail d'intro d'un enseignant ouvre dix fois plus de portes qu'un mail froid. Tu ne demandes pas un avis général, tu demandes « à qui parler au LIRMM/LAAS sur ce sujet ».",
+      "etapes": [
+        "Choisir les 2 profs : celui qui te connaît le mieux + celui dont la discipline est la plus proche (robotique/réseaux)",
+        "Structure du mail (≤ 12 lignes) : 1 ligne qui tu es ; 2 lignes ce que tu vises (thèse oct. 2027, IoT/robotique de terrain) ; 3 lignes les 3 sujets en une phrase chacun ; 1 ligne ce que tu as déjà (FieldNav, lien GitHub) ; la demande : « connaissez-vous quelqu'un au LIRMM/LAAS/Inria à qui je pourrais écrire de votre part ? » ; proposition de passer 15 min",
+        "Joindre rien (le research statement n'existe pas encore) ; mettre le lien GitHub",
+        "Relire à froid après 10 min ; supprimer tout ce qui n'est pas nécessaire",
+        "Envoyer les 2 mails ; créer/mettre à jour les 2 contacts dans Cap 2027 (statut CONTACTE, relance au 13 nov.)",
+        "Journal : à qui, quoi demandé"
+      ],
+      "critere de fini": "2 mails partis ; 2 contacts en statut CONTACTE avec date de relance.",
+      "livrables": ["2 mails", "2 contacts à jour dans Cap 2027"]
+    },
+
+    {
+      "titre": "Session longue : run complet de bout en bout, même moche",
+      "date": "2026-11-07", "projet": "fieldnav", "duree estimee": 160,
+      "objectif": "Une seule commande lance tout : scène, robot, capteurs bruités, fusion, contrôleur, log — et termine proprement avec un résumé.",
+      "contexte": "Samedi 2 × 80 min. Jusqu'ici chaque brique a été testée en isolation ou à la main. Aujourd'hui on fait l'intégration : un exécutable fieldnav_run avec des options, zéro feature nouvelle.",
+      "etapes": [
+        "Bloc 1 — Créer apps/fieldnav_run.cpp : options --scene, --reference, --pose-source, --seed, --duration, --gps-sigma, --gps-loss, --out",
+        "Bloc 1 — Boucle : init → step jusqu'à fin de rang ou duration → écriture du log → résumé console (RMS, max, distance parcourue)",
+        "Bloc 1 — Codes de retour : 0 ok, 1 sortie de rang, 2 erreur de config",
+        "Pause 20 min",
+        "Bloc 2 — Lancer les 3 variantes de pose-source et les 2 scènes = 6 runs, tous terminent",
+        "Bloc 2 — Script scripts/run_matrix.sh qui lance les 6 et range les CSV dans results/<date>/",
+        "Bloc 2 — Mettre run_matrix dans la CI (durée courte, 10 s) comme test d'intégration",
+        "Fermer l'issue « Jalon 9 nov » si tout passe"
+      ],
+      "critere de fini": "./fieldnav_run --scene row_curved --pose-source fusion --out r.csv termine avec code 0 et affiche un RMS ; la CI exécute la matrice réduite.",
+      "livrables": ["apps/fieldnav_run.cpp", "scripts/run_matrix.sh", "results/2026-11-07/*.csv"]
+    },
+
+    {
+      "titre": "Export télémétrie (CSV/JSON) du run : pose, estimée, erreur, horodatage",
+      "date": "2026-11-09", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Un format de télémétrie documenté, identique pour la sim et (plus tard) le robot réel, écrit par sensor_utils.",
+      "contexte": "Le log ad hoc du 29 oct. devient un vrai format. C'est aussi le pont avec le sujet n°2 (télémétrie) et avec le banc réel de janvier : même schéma des deux côtés.",
+      "etapes": [
+        "Écrire docs/telemetry_format.md : colonnes, unités, fréquence, convention de repère, exemple de 3 lignes",
+        "Colonnes CSV : t_s, x_true, y_true, th_true, x_est, y_est, th_est, x_gps, y_gps, gps_valid, v_cmd, w_cmd, lat_err",
+        "Variante JSON Lines (1 objet par ligne, mêmes clés) pour MQTT plus tard",
+        "Implémenter un TelemetryWriter dans sensor_utils (ou à côté) : open(path, format), write(sample), close() ; flush périodique",
+        "Remplacer le log ad hoc de fieldnav_run par TelemetryWriter",
+        "Test : écrire 100 échantillons, relire, comparer"
+      ],
+      "critere de fini": "docs/telemetry_format.md existe ; fieldnav_run produit CSV et JSONL conformes ; test de relecture PASS.",
+      "livrables": ["docs/telemetry_format.md", "TelemetryWriter + test"]
+    },
+
+    {
+      "titre": "Script de tracé des erreurs + figure propre",
+      "date": "2026-11-10", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Un script Python qui transforme n'importe quel CSV de télémétrie en 2 figures publiables : trajectoires (vraie/estimée/GPS) et erreur latérale vs temps.",
+      "contexte": "Ces figures iront dans le README, le research statement et le mémoire. Autant les faire propres une fois : titres, unités, légende, même style partout.",
+      "etapes": [
+        "scripts/plot_run.py <csv> [--out dir] : lit le CSV (pandas), figure 1 = vue de dessus avec la ligne de référence, figure 2 = lat_err(t) avec zones GNSS perdu grisées",
+        "Style commun : matplotlib, taille 16×9 cm, police 9 pt, PNG 200 dpi + PDF vectoriel",
+        "Option --compare a.csv b.csv c.csv : superpose les erreurs latérales des 3 variantes (truth/odom/fusion)",
+        "Afficher RMS et max dans la légende",
+        "Générer les figures des 6 runs du 7 nov. dans results/2026-11-07/fig/",
+        "Mettre la figure --compare de la scène courbe dans le README"
+      ],
+      "critere de fini": "Une commande produit les 2 figures d'un run ; la figure comparative est dans le README et se lit sans explication.",
+      "livrables": ["scripts/plot_run.py", "results/…/fig/*.png|pdf", "README avec figure"],
+      "liens": ["https://matplotlib.org/stable/gallery/index.html"]
+    },
+
+    {
+      "titre": "Research statement v1 (1 page) : projets, intérêts, 3 questions",
+      "date": "2026-11-11", "projet": "recherche", "duree estimee": 50,
+      "objectif": "Une page A4 que tu peux envoyer à n'importe quel chercheur sans l'adapter, et qui donne envie de te répondre.",
+      "contexte": "Un dossier de thèse se juge sur : notes, expérience de recherche, contact avec un encadrant. Le statement compense l'absence de stage labo en montrant que tu sais formuler une question et que tu as déjà construit des choses.",
+      "etapes": [
+        "Structure (1 page, 4 blocs) : Qui je suis (3 lignes : M2 ROC, apprenti robotique logicielle, thèse visée oct. 2027) ; Ce que j'ai construit (FieldNav avec la figure du 10 nov., ESP8266/MQTT, HeliosDB — 1 ligne chacun + lien) ; Ce qui m'intéresse (IoT, robotique de terrain, contraintes embarquées) ; 3 questions de recherche (les 3 shortlist, 2 lignes chacune)",
+        "Fin : ce que je cherche (encadrant, contrat doctoral / CIFRE / thèse à l'étranger) et disponibilité",
+        "Écrire d'un trait, sans relire, puis couper 30 %",
+        "Supprimer toute phrase qui pourrait être écrite par n'importe quel candidat",
+        "Exporter en PDF nommé Sohe_Gilchrist_research_statement_v1.pdf ; version anglaise à prévoir pour l'étranger (v2)",
+        "L'envoyer à toi-même et le lire sur téléphone : s'il faut zoomer, c'est trop dense"
+      ],
+      "critere de fini": "1 page, 1 figure, 3 questions, 0 phrase générique ; PDF prêt à joindre.",
+      "livrables": ["candidatures/research_statement_v1.md + PDF"]
+    },
+
+    {
+      "titre": "Enregistrer la vidéo 30 s + README FieldNav à jour",
+      "date": "2026-11-12", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Quelqu'un qui ouvre le dépôt comprend en 30 secondes ce que fait FieldNav et peut le relancer en 3 commandes.",
+      "contexte": "La vidéo est la preuve ; le README est le mode d'emploi. C'est ce que verront les chercheurs contactés et, plus tard, les jurys.",
+      "etapes": [
+        "Enregistrer le viewer MuJoCo pendant un run fusion sur la scène courbe avec trou GNSS (OBS ou l'enregistreur d'écran), 30 s max, sans son",
+        "Incruster ou mentionner dans la description : ce qu'on voit (points GPS, estimée, ligne), le moment du trou GNSS",
+        "Convertir en GIF léger (< 5 Mo) pour le README + MP4 en release GitHub",
+        "README : 1 phrase de pitch ; GIF ; « Quickstart » en 3 commandes (build, run, plot) ; schéma texte de l'architecture (odometry / sensors / estimation / path / control / telemetry) ; résultats (tableau RMS) ; limites et suite ; licence",
+        "Vérifier le quickstart sur un clone frais dans /tmp",
+        "Fermer l'issue « Jalon 16 nov » ; tag v0.1.0"
+      ],
+      "critere de fini": "Le README montre le GIF et le tableau RMS ; un clone frais compile et lance le run en suivant le README ; tag v0.1.0 poussé.",
+      "livrables": ["README.md", "GIF + MP4", "Tag v0.1.0"]
+    },
+
+    {
+      "titre": "Choisir le sujet du mémoire parmi les 3 ; l'aligner sur le labo visé",
+      "date": "2026-11-13", "projet": "memoire", "duree estimee": 50,
+      "objectif": "Un sujet de mémoire déclaré (ou prêt à l'être), formulé de façon à être aussi le pré-sujet de thèse que tu enverras aux labos.",
+      "contexte": "Le mémoire et l'article de M2 sont ton tremplin : s'ils portent sur le même sujet que la thèse visée, l'article devient le premier jalon de la thèse. Décider maintenant, même imparfaitement.",
+      "etapes": [
+        "Relire les 3 shortlist et les éventuelles réponses des profs (6 nov.)",
+        "Critère décisif : lequel des 3 peut produire un résultat mesurable avec FieldNav d'ici fin mars ? (le mémoire a besoin d'expériences, pas de promesses)",
+        "Choisir ; passer le sujet en statut CHOISI, les 2 autres restent SHORTLIST (ils servent encore pour les candidatures)",
+        "Réécrire le titre du mémoire en une ligne + 5 lignes de résumé ; vérifier qu'il tient dans le gabarit de l'école (23 oct.)",
+        "Mettre à jour memoire/plan.md : resserrer l'état de l'art et les expériences sur ce sujet",
+        "Envoyer la déclaration de sujet (ou la demande de validation) selon la procédure relevée le 23 oct."
+      ],
+      "critere de fini": "Statut CHOISI dans Cap 2027 ; plan.md resserré ; la déclaration de sujet est envoyée ou datée dans un jalon.",
+      "livrables": ["Sujet déclaré", "memoire/plan.md v1"]
+    },
+
+    {
+      "titre": "Session longue : identifier 5 équipes et 1 nom par équipe, lire 1 publi de chaque",
+      "date": "2026-11-14", "projet": "candidature", "duree estimee": 160,
+      "objectif": "Cinq fiches contact précises (nom, équipe, 1 publication lue, pourquoi lui/elle) dans Cap 2027, prêtes pour l'envoi du statement.",
+      "contexte": "Samedi 2 × 80 min. Cibles : LIRMM, LAAS, Inria, IRIT, Lab-STICC (déjà en contacts « à cibler »). Un chercheur répond quand le mail montre que tu as lu son travail.",
+      "etapes": [
+        "Bloc 1 — Pour chaque labo : page des équipes → repérer 2–3 équipes dont les mots-clés recoupent ton sujet CHOISI ; noter les permanents (MCF, CR, DR) qui ont encadré des thèses récentes (HAL/theses.fr)",
+        "Bloc 1 — Retenir 1 nom par labo ; chercher sur HAL/Google Scholar sa publication la plus proche de ton sujet (2022+)",
+        "Pause 20 min",
+        "Bloc 2 — Lire l'abstract + figures + conclusion de chaque publi (15 min chacune) ; noter 1 phrase « ce que je retiens » et 1 question que tu pourrais lui poser",
+        "Bloc 2 — Mettre à jour les 5 contacts dans Cap 2027 : nom, équipe, rôle, mail (page perso du labo), notes = publi + question, prochaine action « envoyer statement » au 25 nov.",
+        "Bloc 2 — Ajouter les 5 publis dans veille.md (elles comptent comme lectures)"
+      ],
+      "critere de fini": "5 contacts nominatifs avec mail et notes ; 5 fiches de plus dans veille.md.",
+      "livrables": ["5 contacts complets", "5 fiches veille"],
+      "liens": ["https://hal.science/", "https://theses.fr/"]
+    },
+
+    {
+      "titre": "Relecture du research statement par un prof, puis v2",
+      "date": "2026-11-18", "projet": "recherche", "duree estimee": 50,
+      "objectif": "Un statement v2 corrigé par quelqu'un qui lit des candidatures de thèse, plus une version anglaise.",
+      "contexte": "Un prof qui a répondu le 6 nov. (ou le tuteur académique) est le bon relecteur. S'il n'y a pas de réponse : relecture par un doctorant/ancien d'IMERIR, ou à défaut relecture croisée avec Claude en lui demandant d'être dur.",
+      "etapes": [
+        "Envoyer la v1 au relecteur avec 3 questions précises : la question de recherche est-elle claire ? qu'est-ce qui manque pour un dossier d'ED ? qu'est-ce que vous couperiez ?",
+        "Intégrer les retours ; vérifier que chaque question de recherche a une méthode et une mesure associées",
+        "Traduire en anglais (v2-en) pour les cibles étrangères ; faire relire la langue",
+        "Mettre à jour la figure si FieldNav a avancé",
+        "Exporter v2 FR et EN en PDF ; archiver la v1",
+        "Journal : les 3 remarques les plus utiles"
+      ],
+      "critere de fini": "v2 FR + EN en PDF ; au moins un retour humain intégré.",
+      "livrables": ["research_statement_v2_fr.pdf", "research_statement_v2_en.pdf"]
+    },
+
+    {
+      "titre": "Envoyer le research statement aux 3 premiers chercheurs",
+      "date": "2026-11-25", "projet": "candidature", "duree estimee": 50,
+      "objectif": "Trois mails personnalisés partis, avec le statement en pièce jointe et une demande claire d'échange de 20 minutes.",
+      "contexte": "Les 3 premiers = ceux pour lesquels tu as une intro (via un prof) ou la publi la plus proche. Les 2 autres suivront la semaine d'après avec ce que tu auras appris.",
+      "etapes": [
+        "Pour chaque chercheur : mail de ≤ 15 lignes — objet « Candidat thèse 2027 — [sujet] » ; 1 ligne d'intro (mentionner le prof si intro) ; 2 lignes sur SA publication et ta question ; 3 lignes sur ce que tu proposes (sujet + ce que tu as déjà) ; demande : 20 min de visio ; statement en PJ ; lien GitHub",
+        "Envoyer un mardi–jeudi matin, jamais le vendredi après-midi",
+        "Mettre les 3 contacts en CONTACTE, relance prévue à J+10",
+        "Créer la démarche « Encadrant potentiel — [nom] » dans Cap 2027 si le labo a une campagne ED identifiée",
+        "Préparer 5 questions pour l'éventuel entretien (financement, sujets ouverts, co-encadrement, calendrier ED, CIFRE possible ?)",
+        "Journal : envoyés à qui, date de relance"
+      ],
+      "critere de fini": "3 mails envoyés avec PJ ; 3 contacts en CONTACTE avec date de relance ; questions d'entretien écrites.",
+      "livrables": ["3 mails", "candidatures/questions_entretien.md"]
+    },
+
+    {
+      "titre": "Préparer la discussion ILON : argumentaire CIFRE (subvention ANRT, sujet traçabilité IoT des banches)",
+      "date": "2026-12-09", "projet": "candidature", "duree estimee": 50,
+      "objectif": "Une page d'argumentaire et un rendez-vous pris avec le tuteur avant les vacances de Noël.",
+      "contexte": "Pas « embauchez-moi ». Le message : « je m'oriente vers la recherche ; une CIFRE permettrait à ILON de garder le projet traçabilité des banches avec un doctorant subventionné ». Pour une PME, l'argument financier compte autant que le projet.",
+      "etapes": [
+        "Vérifier les chiffres ANRT à jour sur anrt.asso.fr : montant de la subvention annuelle, salaire minimum du doctorant, durée (3 ans), crédit impôt recherche cumulable",
+        "Écrire candidatures/cifre_ilon.md (1 page) : le projet (traçabilité RFID/BLE/GPS des banches : où on en est, ce qu'une thèse apporterait), ce que ça coûte à ILON net de subvention et de CIR, ce que ça rapporte (produit, brevets éventuels, image), le labo partenaire pressenti (LIRMM), le calendrier (dossier ANRT printemps, démarrage oct. 2027)",
+        "Anticiper 5 objections (coût, temps du tuteur, « et si tu pars après », confidentialité, le labo impose quoi ?) et une réponse courte à chacune",
+        "Préparer la phrase d'ouverture et la demande explicite : « est-ce qu'on peut en parler sérieusement en janvier avec la direction ? »",
+        "Demander un créneau de 30 min au tuteur avant le 18 déc.",
+        "Mettre à jour la démarche CIFRE dans Cap 2027 (statut DOSSIER, notes)"
+      ],
+      "critere de fini": "cifre_ilon.md tient sur une page avec des chiffres sourcés ; un rendez-vous est dans l'agenda avant le 18 déc.",
+      "livrables": ["candidatures/cifre_ilon.md", "RDV tuteur"],
+      "liens": ["https://www.anrt.asso.fr/fr/cifre-7843"]
+    },
+
+    {
+      "titre": "Inventaire châssis : tension/courant des moteurs, type d'alim, pins ESP disponibles ; commander le driver (≤ 6 €)",
+      "date": "2026-11-28", "projet": "fieldnav", "duree estimee": 50,
+      "objectif": "Tu sais exactement ce que tu as, ce qu'il manque, et le driver est commandé.",
+      "contexte": "Châssis 4 roues + 4 moteurs déjà en main ; ESP8266 fonctionnel (projet MQTT) ; les deux ESP32 sont HS. Plafond 15 €. Le banc n'existe que parce que la vidéo sim du 23 nov. est faite.",
+      "etapes": [
+        "Identifier les moteurs : TT jaunes (3–6 V, ~200 mA à vide, 1 A+ au blocage) ou autre ; noter la référence si visible",
+        "Mesurer au multimètre la résistance d'un moteur et la tension de l'alim prévue (pack piles ? 2S Li-ion ? USB ?) ; décider : moteurs alimentés par la batterie, ESP par un régulateur 3,3 V ou USB séparé — jamais les moteurs sur le 3,3 V de l'ESP",
+        "Choisir le driver : TB6612FNG (2 canaux, 1,2 A/canal, PWM jusqu'à 100 kHz, peu de chauffe) ; brancher les 2 moteurs de chaque côté en parallèle sur un canal. L298N accepté si c'est ce que tu trouves à ≤ 5 €",
+        "Pins ESP8266 à réserver : PWMA=D1, PWMB=D2, AIN1=D5, AIN2=D6, BIN1=D7, BIN2=D8, STBY=3,3 V ; vérifier qu'aucun n'est déjà pris par l'OLED (I2C sur GPIO 12/14 = D6/D5 dans ton montage MQTT !) → si l'OLED reste, déplacer AIN1/AIN2 sur D3/D4 ou retirer l'OLED du robot",
+        "Commander le driver (+ éventuellement 1 ESP32 à ~6 € si tu veux plus de GPIO, dans le plafond)",
+        "Écrire banc/inventaire.md : composants, tensions, pins, schéma texte"
+      ],
+      "critere de fini": "inventaire.md complet ; commande passée ; total dépensé noté (≤ 15 €).",
+      "livrables": ["banc/inventaire.md", "Commande du driver"],
+      "liens": ["https://www.pololu.com/product/713"]
+    },
+
+    {
+      "titre": "Câblage driver + moteurs par paire (gauche/droite), test moteur par moteur",
+      "date": "2026-12-05", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Les 4 roues tournent dans les deux sens, commandées par un sketch minimal, sans rien chauffer.",
+      "contexte": "Samedi. Avant tout code intelligent : vérifier le matériel moteur par moteur. Les erreurs de câblage se paient en drivers grillés.",
+      "etapes": [
+        "Câbler d'abord UN moteur sur le canal A ; VM = batterie, VCC = 3,3 V, GND communs (batterie, driver, ESP)",
+        "Sketch Arduino minimal : STBY HIGH, AIN1 HIGH/AIN2 LOW, analogWrite(PWMA, 128) 2 s, puis inversé 2 s, puis stop — vérifier le sens",
+        "Répéter pour chaque moteur ; marquer au feutre les fils + et − de chaque moteur pour que les deux moteurs d'un même côté tournent dans le même sens une fois en parallèle",
+        "Brancher les paires en parallèle (G1+G2 sur A, D1+D2 sur B) ; retester avant/arrière ; mesurer le courant total à vide",
+        "Sketch « carré » : avant 2 s, rotation sur place 1 s, ×4 — robot posé sur un support, roues en l'air, puis au sol",
+        "Toucher le driver après 2 min : tiède ok, brûlant = problème (courant de blocage, court-circuit)"
+      ],
+      "critere de fini": "Les 4 roues répondent correctement ; le robot fait un carré approximatif au sol ; le driver reste tiède.",
+      "livrables": ["banc/firmware/01_motor_test.ino", "Photo du câblage dans banc/"]
+    },
+
+    {
+      "titre": "Firmware : commande vitesse/direction en PWM, arrêt d'urgence logiciel, commande via MQTT",
+      "date": "2026-12-12", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Le robot reçoit (v, ω) par MQTT, les transforme en PWM gauche/droite, et s'arrête seul si plus rien n'arrive pendant 500 ms.",
+      "contexte": "Réutilise ton code ESP8266 → HiveMQ Cloud (TLS 8883) du projet MQTT. Topics proposés : fieldnav/cmd_vel (JSON {v, w}), fieldnav/telemetry (sortie), fieldnav/estop.",
+      "etapes": [
+        "Structurer le firmware : motors.h (setSpeeds(left, right) en [-1, 1] → direction + PWM 10 bits), mqtt.h (connexion existante), main.ino (boucle à 50 Hz)",
+        "Cinématique inverse : left = v − ω·L/2, right = v + ω·L/2 (L = entraxe mesuré), normalisation si |left| ou |right| > v_max",
+        "Watchdog : timestamp du dernier cmd_vel ; si > 500 ms → setSpeeds(0, 0). Message sur fieldnav/estop = arrêt immédiat jusqu'à reset",
+        "Rampe simple sur le PWM (max ±10 %/cycle) pour éviter les à-coups et les chutes de tension qui redémarrent l'ESP",
+        "Test depuis le PC : mosquitto_pub -t fieldnav/cmd_vel -m '{\"v\":0.3,\"w\":0}' → avance ; arrêt de la publication → stop sous 0,5 s",
+        "Mesurer la latence commande→mouvement (horodatage) et la noter"
+      ],
+      "critere de fini": "Commande par MQTT fonctionnelle ; watchdog vérifié en coupant le Wi-Fi ; latence notée dans le journal.",
+      "livrables": ["banc/firmware/02_mqtt_drive/", "Latence mesurée"]
+    },
+
+    {
+      "titre": "Odométrie par modèle (v, ω commandés → pose) et publication MQTT à 10 Hz",
+      "date": "2027-01-09", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Le robot publie une pose estimée (x, y, θ) intégrée à partir des commandes, 10 fois par seconde.",
+      "contexte": "Pas d'encodeurs : l'odométrie est « ce que le robot croit faire ». Elle sera fausse (glissement, tension batterie) — c'est le point : on mesurera cette erreur.",
+      "etapes": [
+        "Porter DiffDriveOdometry (24 oct.) en C Arduino : mêmes équations, dt mesuré avec micros()",
+        "Étalonner : commander v = 0,3 m/s pendant 3 s, mesurer la distance réelle au mètre, ajuster le gain PWM→m/s ; idem rotation 360° pour le gain ω",
+        "Publier fieldnav/telemetry en JSON Lines à 10 Hz : t_ms, x_est, y_est, th_est, v_cmd, w_cmd, batt_v (ADC si dispo)",
+        "Côté PC : un script Python mqtt_to_csv.py qui s'abonne et écrit le CSV",
+        "Test : carré de 1 m côté ; comparer la pose finale estimée (devrait revenir à 0,0) et la position réelle (mesurée au mètre) — noter l'erreur",
+        "Journal : gains d'étalonnage, erreur de fermeture du carré"
+      ],
+      "critere de fini": "CSV de 30 s reçu sur le PC ; erreur de fermeture du carré mesurée et notée (peu importe sa valeur).",
+      "livrables": ["banc/firmware/03_odometry/", "banc/tools/mqtt_to_csv.py", "Gains d'étalonnage"]
+    },
+
+    {
+      "titre": "Même format de télémétrie que la sim (export CSV/JSON identique) → le script de tracé fonctionne sur les deux",
+      "date": "2027-01-16", "projet": "fieldnav", "duree estimee": 60,
+      "objectif": "plot_run.py trace un run réel sans modification : mêmes colonnes, mêmes unités, mêmes repères.",
+      "contexte": "docs/telemetry_format.md (9 nov.) est la référence. Le réel n'a pas de vérité terrain continue : les colonnes *_true sont vides sauf aux points mesurés à la main.",
+      "etapes": [
+        "Aligner les clés JSON du firmware sur telemetry_format.md (t_s en secondes, th en radians, repère : départ = origine, x vers l'avant)",
+        "mqtt_to_csv.py écrit exactement les colonnes du format ; colonnes manquantes = NaN",
+        "Ajouter à plot_run.py la gestion des NaN (ne pas tracer la vérité si absente) et un marqueur pour les points de vérité manuels",
+        "Protocole de vérité terrain : 3 repères au sol (départ, milieu, fin) mesurés au mètre ; saisis dans un petit fichier ground_truth.csv fusionné au tracé",
+        "Tracer le carré du 9 janvier : la figure doit ressembler à celles de la sim",
+        "Mettre à jour telemetry_format.md : section « acquisition réelle »"
+      ],
+      "critere de fini": "python plot_run.py results/real/square.csv produit les figures sans erreur ; le format est documenté pour les deux sources.",
+      "livrables": ["Firmware + mqtt_to_csv.py alignés", "plot_run.py tolérant aux NaN", "telemetry_format.md v2"]
+    },
+
+    {
+      "titre": "Porter le pure pursuit sur l'ESP (waypoints en dur), ligne au scotch dans un couloir",
+      "date": "2027-01-23", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Le robot suit seul une ligne droite de 5 m tracée au sol, en se fiant uniquement à son odométrie par modèle.",
+      "contexte": "Boucle fermée sur une pose estimée fausse : exactement la variante « odom » du 5 nov., en vrai. Le scotch au sol sert à TOI pour mesurer l'écart, le robot ne le voit pas.",
+      "etapes": [
+        "Porter Path + PurePursuit (2–3 nov.) en C Arduino, waypoints en dur : ligne droite de 5 m tous les 0,5 m, puis une courbe douce",
+        "Lookahead réel : partir de la valeur sim (journal du 3 nov.) et prévoir de la régler",
+        "Mode autonome déclenché par MQTT (fieldnav/start) ; estop toujours actif",
+        "Tracer la ligne au scotch dans un couloir, repères tous les mètres",
+        "5 runs de 5 m : à chaque repère, noter l'écart latéral réel (règle) ; télémétrie enregistrée en parallèle",
+        "Journal : écart moyen, max, et ce qui dérive (cap ? vitesse ?)"
+      ],
+      "critere de fini": "Le robot parcourt les 5 m sans sortir d'une bande de ±30 cm sur au moins 3 runs sur 5 ; écarts notés.",
+      "livrables": ["banc/firmware/04_pure_pursuit/", "results/real/line_*.csv + mesures manuelles"]
+    },
+
+    {
+      "titre": "Réglage du contrôleur, 5 runs, courbe d'erreur réelle",
+      "date": "2027-01-30", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Un jeu de paramètres retenu et une figure « erreur latérale réelle vs distance » avec 5 runs superposés.",
+      "contexte": "Même protocole que le 23 janvier, mais on ne change qu'un paramètre à la fois (lookahead, puis vitesse, puis gains d'étalonnage) et on garde des traces.",
+      "etapes": [
+        "Grille : lookahead ∈ {0,4 ; 0,6 ; 0,8 m} × v ∈ {0,2 ; 0,3 m/s} ; 2 runs par combinaison sur la ligne droite",
+        "Mesurer l'écart aux repères ; retenir la combinaison au plus faible écart max",
+        "Avec la combinaison retenue : 5 runs sur la courbe douce, télémétrie + mesures manuelles",
+        "Figure : 5 courbes d'erreur superposées + moyenne ; même style que la sim",
+        "Comparer avec la variante « odom » de la sim : l'erreur réelle est-elle du même ordre ? Pourquoi (glissement, batterie) ?",
+        "Journal : paramètres retenus, 3 causes d'écart identifiées"
+      ],
+      "critere de fini": "Figure 5 runs produite ; paramètres figés dans le firmware ; 3 causes d'écart écrites.",
+      "livrables": ["results/real/fig/tuning.png", "Firmware avec paramètres finaux"]
+    },
+
+    {
+      "titre": "Vidéo sim vs réel + paragraphe « limites » pour le mémoire (pas d'encodeurs, pas de GNSS)",
+      "date": "2027-02-13", "projet": "fieldnav", "duree estimee": 90,
+      "objectif": "Une vidéo de 30 s côte à côte (sim à gauche, réel à droite) et un paragraphe de mémoire qui dit clairement ce que le banc prouve et ne prouve pas.",
+      "contexte": "C'est la dernière livrable du banc. Après ça, plus de matériel avant juin : tout le temps va au mémoire, à l'article et aux candidatures.",
+      "etapes": [
+        "Filmer un run réel (téléphone sur trépied improvisé, plan fixe de côté) et enregistrer le run sim équivalent (même trajectoire)",
+        "Montage côte à côte (ffmpeg hstack ou n'importe quel éditeur), 30 s, titre en incrustation : « Pure pursuit — odométrie seule — sim vs réel »",
+        "Ajouter au README FieldNav : la vidéo (GIF) + la figure tuning + 3 lignes de résultats réels",
+        "Écrire memoire/limites_banc.md (15 lignes) : pas d'encodeurs (odométrie par modèle), pas de GNSS (donc pas de fusion testée en réel), surface lisse, 5 m seulement ; ce que ça valide quand même (porting du contrôleur, format télémétrie, ordre de grandeur de la dérive)",
+        "Mettre à jour la démarche/jalon « Banc réel » en fait ; ranger le robot",
+        "Journal : ce que tu referais différemment"
+      ],
+      "critere de fini": "Vidéo publiée en release GitHub ; README à jour ; limites_banc.md prêt à coller dans le mémoire.",
+      "livrables": ["Vidéo sim vs réel", "memoire/limites_banc.md", "README FieldNav v0.2"]
+    }
+  ]
+}

@@ -99,6 +99,7 @@ ctest --test-dir build/asan --output-on-failure
 ```
 fieldnav/
 ├── c_legacy/        Phase 1: dynamic matrix library in C (educational)
+├── libs/sensor_utils/  Statistiques header-only (C++20) : rms, maxAbs. Recréé : la version de FieldTelemetry (gelé le 2026-10-20) est perdue, voir ADR 0004
 ├── core/            Phase 2: C++17 core types (Pose, Quaternion, ...)
 ├── filters/         Phase 3: EKF, UKF, Particle Filter (stub)
 ├── ros2_ws/         Phase 4: ROS 2 nodes (stub)
