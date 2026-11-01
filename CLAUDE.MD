@@ -32,11 +32,15 @@ facteurs avant janvier, refonte de l'architecture, nouveau framework de build, n
 
 | Date | Jalon | On sait que c'est fait quand… |
 |---|---|---|
-| 26 oct | Fondations | FieldTelemetry archivé ; `libs/sensor_utils` compile en C++20 dans FieldNav, ses tests tournent dans ctest ; ADR 0004 (fusion) et ADR 0005 (feature cible) commités ; module `odometry` avec API + tests triviaux ; CI verte |
-| 2 nov | Capteurs | Odométrie alimentée par la sim (bruit ±2 % sur les roues) ; `GpsSim` (biais + marche aléatoire + pertes, seed fixée, tests statistiques) ; fusion complémentaire ; scène de rang (droite + courbe) + CSV de référence ; RMS odo / gps / fusion imprimés en fin de run |
-| 9 nov | Contrôle | `Path` (erreur latérale signée, lookahead) ; `PurePursuit` ; suivi sur vérité terrain puis sur estimée ; exécutable `fieldnav_run` avec options ; `scripts/run_matrix.sh` ; matrice réduite dans la CI |
-| 16 nov | Livrable | `docs/telemetry_format.md` + `TelemetryWriter` CSV/JSONL ; `scripts/plot_run.py` (trajectoires, erreur latérale, mode `--compare`) ; README avec GIF + tableau RMS + quickstart vérifié sur clone frais ; tag `v0.1.0` |
-| 23 nov | Vidéo | MP4 30 s en release GitHub, GIF < 5 Mo dans le README |
+Planning recalé d'une semaine le 1er novembre (ADR 0005) : Livrable et Vidéo fusionnés, rang droit d'abord,
+rang courbe et JSONL en bonus.
+
+| Date | Jalon | On sait que c'est fait quand… |
+|---|---|---|
+| 3 nov | Fondations | FieldTelemetry archivé ; `libs/sensor_utils` compile en C++20 dans FieldNav, ses tests tournent dans ctest ; ADR 0004 et ADR 0005 commités ; 4 issues de jalon ; module `odometry` avec API + tests triviaux ; CI verte |
+| 9 nov | Capteurs | Odométrie alimentée par la sim (bruit ±2 % sur les roues) ; `GpsSim` (biais + marche aléatoire + pertes, seed fixée, tests statistiques) ; fusion complémentaire ; scène de rang droit + CSV de référence ; RMS odo / gps / fusion imprimés en fin de run |
+| 16 nov | Contrôle | `Path` (erreur latérale signée, lookahead) ; `PurePursuit` ; suivi sur vérité terrain puis sur estimée (rang droit ; rang courbe si validé avant le 13 nov) ; exécutable `fieldnav_run` avec options ; `scripts/run_matrix.sh` ; matrice réduite dans la CI |
+| 23 nov | Livrable | `docs/telemetry_format.md` + `TelemetryWriter` CSV (JSONL si le temps le permet) ; `scripts/plot_run.py` (trajectoires, erreur latérale, mode `--compare`) ; README avec GIF < 5 Mo + tableau RMS + quickstart vérifié sur clone frais ; tag `v0.1.0` ; MP4 30 s en release GitHub |
 
 Un jalon = une issue GitHub « Jalon <date> ». Fermer l'issue = jalon atteint. Les détails étape par étape de
 chaque session se trouvent dans `cap2027-details-taches.json` (projet « fieldnav », fichier fourni par Gil) :
