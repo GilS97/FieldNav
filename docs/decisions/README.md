@@ -8,3 +8,4 @@ taken. New ADRs follow `template.md`.
 | 0001  | C++17 as minimum standard     | Accepted |
 | 0002  | Eigen for linear algebra      | Accepted |
 | 0003  | Apache-2.0 license            | Accepted |
+| 0004  | Gel de FieldTelemetry, sensor_utils recréé | Accepted |
