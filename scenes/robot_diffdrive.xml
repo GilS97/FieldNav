@@ -1,0 +1,150 @@
+<!--
+  Robot de FieldNav : châssis LAFVIN 4WD Smart Robot Car V2.2 (même robot que le banc réel).
+  4 roues motrices, un moteur TT par roue ; les deux moteurs d'un même côté reçoivent la même
+  consigne (moteur A = gauche, moteur B = droite, comme sur le shield). Le robot tourne en
+  faisant glisser ses roues (skid-steer) : modèle différentiel avec un entraxe effectif.
+
+  Repère : x vers l'avant, y vers la gauche, z vers le haut ; unités SI.
+  Origine du corps « chassis » : centre des 4 axes de roue, à hauteur d'axe.
+
+  Dimensions (estimées sur un kit standard, À MESURER sur le vrai robot, voir tableau de bord) :
+    rayon de roue      0,0325 m  (roue TT de 65 mm)     largeur de pneu 0,027 m
+    voie (entraxe)     0,150 m   (centre pneu gauche - centre pneu droit)
+    empattement        0,130 m   (axe avant - axe arrière)
+    plaques acrylique  0,255 x 0,150 m, épaisseur 3 mm, écartées de 30 mm
+    masse totale       ≈ 0,84 kg (plaques, 4 moteurs, 2 × 18650, UNO + shield, roues)
+  Moteur TT 1:48 sous 6 V : ≈ 20 rad/s à vide (0,65 m/s), couple de blocage ≈ 0,08 N·m.
+
+  Noms utilisés par src/sim : freejoint root ; joints j_wheel_fl / rl / fr / rr ;
+  actionneurs m_fl / m_rl / m_fr / m_rr ; geom tire_fl (rayon lu dans le modèle).
+  Caméras : « suivi » (derrière le robot, le suit), « dessus » (vue de haut, le suit).
+-->
+<mujoco model="fieldnav_lafvin_4wd">
+  <compiler angle="degree"/>
+  <!-- implicitfast : stable avec des actionneurs en vitesse ; pas de 2 ms. -->
+  <option timestep="0.002" integrator="implicitfast"/>
+
+  <!-- Cadrage initial du viewer sur le robot (sinon il se règle sur le sol de 400 m). -->
+  <statistic center="0 0 0.05" extent="0.45"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="-140" elevation="-22"/>
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.55 0.55 0.55" specular="0.1 0.1 0.1"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.01"/>
+  </visual>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.62 0.76 0.90" rgb2="0.97 0.98 1"
+             width="512" height="512"/>
+    <!-- Sol de terre, quadrillage de 1 m pour voir le déplacement. -->
+    <texture name="soil" type="2d" builtin="checker" rgb1="0.44 0.35 0.26" rgb2="0.40 0.32 0.24"
+             width="512" height="512" mark="edge" markrgb="0.52 0.43 0.33"/>
+    <material name="soil" texture="soil" texrepeat="200 200" reflectance="0"/>
+    <material name="acrylic" rgba="0.10 0.10 0.12 0.88" specular="0.7" shininess="0.9"/>
+    <material name="tire" rgba="0.07 0.07 0.07 1" specular="0.05" shininess="0.1"/>
+    <material name="rim" rgba="0.96 0.76 0.10 1" specular="0.3"/>
+    <material name="tt_motor" rgba="0.95 0.80 0.15 1" specular="0.2"/>
+    <material name="pcb_blue" rgba="0.05 0.33 0.55 1" specular="0.3"/>
+    <material name="pcb_red" rgba="0.62 0.08 0.08 1" specular="0.3"/>
+    <material name="cell" rgba="0.15 0.45 0.25 1" specular="0.4"/>
+    <material name="holder" rgba="0.05 0.05 0.05 1"/>
+    <material name="metal" rgba="0.75 0.75 0.78 1" specular="0.8" shininess="0.9"/>
+    <material name="sensor" rgba="0.20 0.55 0.85 1" specular="0.4"/>
+  </asset>
+
+  <default>
+    <!-- Pièces décoratives : visibles, sans collision ; leur masse est donnée explicitement. -->
+    <default class="visual">
+      <geom contype="0" conaffinity="0" group="1"/>
+    </default>
+    <default class="wheel">
+      <joint type="hinge" axis="0 1 0" armature="0.002" damping="0.0005"/>
+      <!-- Caoutchouc sur terre sèche : frottement ≈ 0,9 ; roulement et pivotement faibles. -->
+      <geom type="cylinder" size="0.0325 0.0135" euler="90 0 0" mass="0.03" material="tire"
+            friction="0.9 0.005 0.0005" condim="3" priority="1"/>
+    </default>
+    <!-- Moteur TT : vitesse pilotée (≈ moteur à courant continu sous tension fixe), saturée en
+         vitesse (20 rad/s) et en couple (0,08 N·m). -->
+    <default class="tt">
+      <velocity kv="0.05" ctrlrange="-20 20" forcerange="-0.08 0.08"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light name="sun" pos="2 -3 6" dir="-0.3 0.4 -1" directional="true" castshadow="true"
+           diffuse="0.75 0.73 0.68"/>
+    <geom name="floor" type="plane" size="200 200 0.1" material="soil" friction="0.9 0.005 0.0005"/>
+
+    <body name="chassis" pos="0 0 0.0325">
+      <freejoint name="root"/>
+      <camera name="suivi" mode="trackcom" pos="-0.9 0 0.45" xyaxes="0 -1 0 0.45 0 0.9"/>
+      <camera name="dessus" mode="trackcom" pos="0 0 2.2" xyaxes="1 0 0 0 1 0"/>
+
+      <!-- Plaque basse (porte les moteurs) et plaque haute (électronique), avec collision. -->
+      <geom name="plate_low" type="box" size="0.1275 0.075 0.0015" pos="0 0 0.018"
+            material="acrylic" mass="0.12"/>
+      <geom name="plate_high" type="box" size="0.1275 0.075 0.0015" pos="0 0 0.051"
+            material="acrylic" mass="0.10"/>
+      <!-- 4 entretoises laiton. -->
+      <geom class="visual" type="cylinder" size="0.003 0.0165" pos="0.11 0.06 0.0345" material="metal" mass="0.005"/>
+      <geom class="visual" type="cylinder" size="0.003 0.0165" pos="0.11 -0.06 0.0345" material="metal" mass="0.005"/>
+      <geom class="visual" type="cylinder" size="0.003 0.0165" pos="-0.11 0.06 0.0345" material="metal" mass="0.005"/>
+      <geom class="visual" type="cylinder" size="0.003 0.0165" pos="-0.11 -0.06 0.0345" material="metal" mass="0.005"/>
+      <!-- 4 moteurs TT jaunes sous la plaque basse, alignés sur les axes. -->
+      <geom class="visual" type="box" size="0.035 0.011 0.0095" pos="0.065 0.040 0.0" material="tt_motor" mass="0.03"/>
+      <geom class="visual" type="box" size="0.035 0.011 0.0095" pos="-0.065 0.040 0.0" material="tt_motor" mass="0.03"/>
+      <geom class="visual" type="box" size="0.035 0.011 0.0095" pos="0.065 -0.040 0.0" material="tt_motor" mass="0.03"/>
+      <geom class="visual" type="box" size="0.035 0.011 0.0095" pos="-0.065 -0.040 0.0" material="tt_motor" mass="0.03"/>
+      <!-- Porte-piles 2 × 18650 entre les plaques, à l'arrière. -->
+      <geom class="visual" type="box" size="0.040 0.022 0.010" pos="-0.06 0 0.030" material="holder" mass="0.03"/>
+      <geom class="visual" type="cylinder" size="0.009 0.0325" pos="-0.06 0.0095 0.030" euler="0 90 0" material="cell" mass="0.047"/>
+      <geom class="visual" type="cylinder" size="0.009 0.0325" pos="-0.06 -0.0095 0.030" euler="0 90 0" material="cell" mass="0.047"/>
+      <!-- Arduino UNO (bleu) + shield moteur (rouge) sur la plaque haute. -->
+      <geom class="visual" type="box" size="0.034 0.027 0.0008" pos="-0.01 0 0.0535" material="pcb_blue" mass="0.025"/>
+      <geom class="visual" type="box" size="0.034 0.027 0.0008" pos="-0.01 0 0.0640" material="pcb_red" mass="0.020"/>
+      <geom class="visual" type="box" size="0.002 0.020 0.004" pos="-0.01 0 0.0590" material="holder" mass="0.002"/>
+      <!-- Capteur ultrason à l'avant (deux « yeux »). -->
+      <geom class="visual" type="box" size="0.004 0.023 0.010" pos="0.118 0 0.064" material="sensor" mass="0.008"/>
+      <geom class="visual" type="cylinder" size="0.008 0.006" pos="0.124 0.013 0.064" euler="0 90 0" material="metal" mass="0.001"/>
+      <geom class="visual" type="cylinder" size="0.008 0.006" pos="0.124 -0.013 0.064" euler="0 90 0" material="metal" mass="0.001"/>
+      <!-- Masse restante (câbles, visserie, module Bluetooth) au centre, invisible. -->
+      <geom class="visual" type="sphere" size="0.005" pos="0 0 0.03" rgba="0 0 0 0" mass="0.17"/>
+
+      <!-- Roues : avant gauche, arrière gauche, avant droite, arrière droite. -->
+      <body name="wheel_fl" pos="0.065 0.075 0">
+        <joint name="j_wheel_fl" class="wheel"/>
+        <geom name="tire_fl" class="wheel"/>
+        <geom class="visual" type="cylinder" size="0.022 0.0140" euler="90 0 0" material="rim" mass="0.001"/>
+        <geom class="visual" type="box" size="0.020 0.0142 0.003" material="rim" mass="0.001"/>
+      </body>
+      <body name="wheel_rl" pos="-0.065 0.075 0">
+        <joint name="j_wheel_rl" class="wheel"/>
+        <geom name="tire_rl" class="wheel"/>
+        <geom class="visual" type="cylinder" size="0.022 0.0140" euler="90 0 0" material="rim" mass="0.001"/>
+        <geom class="visual" type="box" size="0.020 0.0142 0.003" material="rim" mass="0.001"/>
+      </body>
+      <body name="wheel_fr" pos="0.065 -0.075 0">
+        <joint name="j_wheel_fr" class="wheel"/>
+        <geom name="tire_fr" class="wheel"/>
+        <geom class="visual" type="cylinder" size="0.022 0.0140" euler="90 0 0" material="rim" mass="0.001"/>
+        <geom class="visual" type="box" size="0.020 0.0142 0.003" material="rim" mass="0.001"/>
+      </body>
+      <body name="wheel_rr" pos="-0.065 -0.075 0">
+        <joint name="j_wheel_rr" class="wheel"/>
+        <geom name="tire_rr" class="wheel"/>
+        <geom class="visual" type="cylinder" size="0.022 0.0140" euler="90 0 0" material="rim" mass="0.001"/>
+        <geom class="visual" type="box" size="0.020 0.0142 0.003" material="rim" mass="0.001"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Consigne de vitesse de roue en rad/s. Côté gauche (moteur A) : fl + rl ;
+         côté droit (moteur B) : fr + rr. -->
+    <velocity name="m_fl" class="tt" joint="j_wheel_fl"/>
+    <velocity name="m_rl" class="tt" joint="j_wheel_rl"/>
+    <velocity name="m_fr" class="tt" joint="j_wheel_fr"/>
+    <velocity name="m_rr" class="tt" joint="j_wheel_rr"/>
+  </actuator>
+</mujoco>
