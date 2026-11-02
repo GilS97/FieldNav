@@ -1,0 +1,6 @@
+# Dépendances Python de FieldNav (scripts/). Installation :
+#   python -m venv .venv
+#   .venv/Scripts/python -m pip install -r scripts/requirements.txt   (Windows)
+#   .venv/bin/python -m pip install -r scripts/requirements.txt       (Linux)
+# Même version que la bibliothèque C téléchargée par cmake/FetchMuJoCo.cmake.
+mujoco==3.16.0
