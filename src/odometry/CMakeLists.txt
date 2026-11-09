@@ -2,6 +2,7 @@
 
 add_library(fieldnav_odometry STATIC
     odometry.cpp
+    kinematics.cpp
 )
 
 target_include_directories(fieldnav_odometry

@@ -2,6 +2,7 @@
 
 add_executable(test_odometry
     test_odometry.cpp
+    test_kinematics.cpp
 )
 target_link_libraries(test_odometry PRIVATE fieldnav::odometry GTest::gtest_main)
 fieldnav_enable_warnings(test_odometry)
