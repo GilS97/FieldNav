@@ -2,6 +2,7 @@
 
 add_library(fieldnav_sensors STATIC
     wheel_noise.cpp
+    gps_sim.cpp
 )
 
 target_include_directories(fieldnav_sensors
