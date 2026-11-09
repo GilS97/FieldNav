@@ -29,10 +29,27 @@ fieldnav_copy_mujoco_runtime(test_odometry_in_sim)
 
 add_test(NAME sim.odometry_integration COMMAND test_odometry_in_sim)
 
+# Intégration du jalon Capteurs : odométrie + GPS + fusion, RMS imprimés en fin de run.
+add_executable(test_fusion_in_sim
+    test_fusion_in_sim.cpp
+)
+target_link_libraries(test_fusion_in_sim PRIVATE
+    fieldnav::sim fieldnav::sensors fieldnav::odometry fieldnav::estimation
+    fieldnav::sensor_utils GTest::gtest_main
+)
+target_compile_definitions(test_fusion_in_sim PRIVATE
+    FIELDNAV_SCENES_DIR="${PROJECT_SOURCE_DIR}/scenes"
+)
+fieldnav_enable_warnings(test_fusion_in_sim)
+fieldnav_enable_sanitizers(test_fusion_in_sim)
+fieldnav_copy_mujoco_runtime(test_fusion_in_sim)
+
+add_test(NAME sim.fusion_integration COMMAND test_fusion_in_sim)
+
 # MuJoCo précompilé n'est pas instrumenté : on ignore les fuites internes à libmujoco
 # (et seulement celles-là) sous LeakSanitizer.
 if(FIELDNAV_ENABLE_SANITIZERS)
-    set_tests_properties(sim.unit sim.odometry_integration PROPERTIES
+    set_tests_properties(sim.unit sim.odometry_integration sim.fusion_integration PROPERTIES
         ENVIRONMENT "LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_SOURCE_DIR}/lsan.supp"
     )
 endif()
