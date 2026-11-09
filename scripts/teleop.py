@@ -3,6 +3,7 @@
 Usage (depuis la racine du dépôt) :
     .venv/Scripts/python scripts/teleop.py            # ouvre le viewer
     .venv/Scripts/python scripts/teleop.py --check    # vérifie la logique sans fenêtre
+    .venv/Scripts/python scripts/teleop.py --scene row_straight   # piloter dans le rang
 
 Touches (choisies pour ne pas entrer en conflit avec celles du viewer) :
     Flèche haut / bas      accélérer / ralentir (pas de 0,05 m/s, marche arrière possible)
@@ -25,7 +26,7 @@ import time
 import mujoco
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-MODEL = ROOT / "scenes" / "robot_diffdrive.xml"
+SCENES = ROOT / "scenes"
 
 # Entraxe de commande, mesuré en sim le 2 nov. 2026 pour que ω réel ≈ ω demandé (±20 %).
 # Il est plus grand que l'entraxe effectif de l'odométrie (≈ 0,22 m, calculé avec les vitesses
@@ -194,8 +195,10 @@ def main() -> None:
     parser.add_argument("--check", action="store_true", help="vérifie sans ouvrir de fenêtre")
     parser.add_argument("--duration", type=float, default=None,
                         help="ferme le viewer après N secondes (test de non-blocage)")
+    parser.add_argument("--scene", default="robot_diffdrive",
+                        help="scène de scenes/ sans .xml (robot_diffdrive, row_straight...)")
     args = parser.parse_args()
-    model = mujoco.MjModel.from_xml_path(str(MODEL))
+    model = mujoco.MjModel.from_xml_path(str(SCENES / f"{args.scene}.xml"))
     data = mujoco.MjData(model)
     if args.check:
         run_check(model, data)

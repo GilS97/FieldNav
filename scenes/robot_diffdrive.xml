@@ -31,7 +31,8 @@
     <global offwidth="1280" offheight="720" azimuth="-140" elevation="-22"/>
     <headlight ambient="0.35 0.35 0.35" diffuse="0.55 0.55 0.55" specular="0.1 0.1 0.1"/>
     <quality shadowsize="4096"/>
-    <map znear="0.01"/>
+    <!-- shadowclip : zone de calcul des ombres (× extent) assez grande pour le rang. -->
+    <map znear="0.01" shadowclip="6"/>
   </visual>
 
   <asset>
