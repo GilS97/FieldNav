@@ -2,6 +2,7 @@
 
 add_executable(test_sensors
     test_wheel_noise.cpp
+    test_gps_sim.cpp
 )
 target_link_libraries(test_sensors PRIVATE fieldnav::sensors GTest::gtest_main)
 fieldnav_enable_warnings(test_sensors)
