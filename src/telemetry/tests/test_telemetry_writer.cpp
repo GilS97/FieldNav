@@ -60,9 +60,8 @@ ft::TelemetrySample sample(int i) {
 
 TEST(TelemetryWriter, CsvHeaderMatchesDocumentedColumns) {
     const auto file = tempFile("header.csv");
-    {
-        ft::TelemetryWriter w(file, ft::TelemetryFormat::Csv);
-    }
+    ft::TelemetryWriter w(file, ft::TelemetryFormat::Csv);
+    w.close(); // écrit et ferme le fichier avant de le relire
     const auto lines = readLines(file);
     ASSERT_EQ(lines.size(), 1U);
     EXPECT_EQ(lines[0], "t_s,x_true,y_true,th_true,x_est,y_est,th_est,x_gps,y_gps,gps_valid,"
