@@ -2,6 +2,7 @@
 
 add_executable(test_path
     test_reference.cpp
+    test_path.cpp
 )
 target_link_libraries(test_path PRIVATE fieldnav::path GTest::gtest_main)
 target_compile_definitions(test_path PRIVATE
