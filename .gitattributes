@@ -1,0 +1,8 @@
+# Fins de ligne : Git pour Windows convertit LF en CRLF au checkout (core.autocrlf = true).
+# Les fichiers générés et relus octet pour octet (scènes MuJoCo, CSV de référence et de
+# télémétrie) restent en LF partout, pour que le test path.scene_up_to_date et les lecteurs C++
+# voient exactement le même contenu sous Windows et dans la CI Linux.
+*.csv           text eol=lf
+*.jsonl         text eol=lf
+scenes/*.xml    text eol=lf
+*.sh            text eol=lf

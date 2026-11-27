@@ -136,3 +136,23 @@ TEST(DiffDriveSim, ResetReturnsToOrigin) {
     EXPECT_NEAR(s.truePose().theta, 0.0, 1e-9);
     EXPECT_NEAR(s.wheelSpeeds().left, 0.0, 1e-12);
 }
+
+// ─── Scène de rang (générée par scripts/gen_row_scene.py) ───
+
+TEST(DiffDriveSim, LoadsStraightRowSceneWithRobotAtStart) {
+    // La scène inclut le robot : mêmes noms, même géométrie, départ à l'origine au milieu du rang.
+    const sim::DiffDriveSim s(std::string(FIELDNAV_SCENES_DIR) + "/row_straight.xml");
+    EXPECT_NEAR(s.wheelRadius(), 0.0325, 1e-12);
+    const auto p = s.truePose();
+    EXPECT_NEAR(p.x, 0.0, 1e-9);
+    EXPECT_NEAR(p.y, 0.0, 1e-9);
+    EXPECT_NEAR(p.theta, 0.0, 1e-9);
+}
+
+TEST(DiffDriveSim, DrivesStraightDownTheRow) {
+    // 10 s tout droit dans le rang : les plants n'ont pas de collision, le robot avance librement.
+    sim::DiffDriveSim s(std::string(FIELDNAV_SCENES_DIR) + "/row_straight.xml");
+    run(s, {10.0, 10.0}, 10.0);
+    EXPECT_NEAR(s.truePose().x, 3.2, 0.2);
+    EXPECT_NEAR(s.truePose().y, 0.0, 0.01);
+}
