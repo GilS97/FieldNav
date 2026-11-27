@@ -63,7 +63,12 @@ TEST(Path, ClosestIndexFollowsTheRobotLocally) {
     }
 }
 
-// ─── Erreur latérale (à écrire par Gil) ───
+TEST(Path, ArcLengthIsDistanceAlongThePath) {
+    auto p = straight();
+    EXPECT_NEAR(p.arcLength(Pose2D{4.37, 0.3, 0.0}), 4.37, 1e-12);
+}
+
+// ─── Erreur latérale ───
 
 TEST(Path, LateralErrorIsZeroOnTheLine) {
     auto p = straight();
