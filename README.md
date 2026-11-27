@@ -1,134 +1,122 @@
 # FieldNav
 
-> Open-source modular library for sensor fusion and localization in outdoor mobile robotics.
+Un robot agricole simulé suit un rang de culture **à partir d'une pose estimée** : odométrie
+bruitée et GPS bruité fusionnés, pilotage par pure pursuit, télémétrie dans un format documenté.
 
-![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)
-![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)
-![Status](https://img.shields.io/badge/status-Phase%201%20Bootstrap-orange.svg)
+![Le robot suit le rang dans la simulation MuJoCo](docs/img/fieldnav.gif)
 
-FieldNav is a C++ stack for the localization and navigation of mobile robots in
-unstructured outdoor environments (fields, vineyards, orchards). It covers the
-full vertical from STM32 firmware to ROS 2 nodes.
+*Run réel (seed 42, accéléré ×7) : châssis LAFVIN 4WD simulé dans MuJoCo, rang droit de 50 m,
+GPS σ = 1 m avec 20 % de mesures perdues et un trou GNSS de 10 s au milieu du rang.*
 
----
+![C++17/20](https://img.shields.io/badge/C%2B%2B-17%20%2F%2020-blue.svg)
+![MuJoCo 3.16](https://img.shields.io/badge/MuJoCo-3.16-green.svg)
+![Licence Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-green.svg)
 
-## 🚧 Current status
+Projet de M2 (Réseaux et Objets Connectés, Perpignan), support d'un mémoire et d'un dossier de
+thèse. Les décisions sont tracées dans [docs/decisions/](docs/decisions/).
 
-**Phase 1 — Bootstrap** (June 2026). The project foundation is in place:
-build system, CI/CD, C matrix library for educational purposes, and skeleton
-of the C++ core library.
+## Résultats
 
-See [docs/roadmap.md](docs/roadmap.md) for the full plan.
+Rang droit de 50 m, GPS σ = 1 m, 20 % de pertes, trou GNSS de 10 s (80 à 90 s), seed 42 :
 
----
+| Pose donnée au pilote | Distance parcourue | Erreur latérale RMS | Erreur latérale max |
+|---|---|---|---|
+| vérité terrain (référence) | 49,95 m, bout du rang | 0,0 cm | 0,0 cm |
+| odométrie seule | **43,7 m, sortie de rang** | 34,8 cm | 75 cm |
+| **fusion odométrie + GPS** | 49,95 m, bout du rang | **14,4 cm** | 30,9 cm |
 
-## 🏗️ Architecture
+![Erreur latérale selon la pose donnée au pilote](docs/img/compare_lateral.png)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Layer 6 - Visualization, Cloud & Paper                 │
-├─────────────────────────────────────────────────────────┤
-│  Layer 5 - ROS 2 Integration                            │
-│  fieldnav_msgs  •  fieldnav_localization_node           │
-├─────────────────────────────────────────────────────────┤
-│  Layer 4 - Applications & Pipelines                     │
-├─────────────────────────────────────────────────────────┤
-│  Layer 3 - Algorithms                                   │
-│  fieldnav_filters : EKF, UKF, Particle Filter           │
-├─────────────────────────────────────────────────────────┤
-│  Layer 2 - C++ Core Library                             │
-│  fieldnav_core : Pose, Transform, Quaternion, Time      │
-├─────────────────────────────────────────────────────────┤
-│  Layer 1 - Embedded firmware (STM32 + FreeRTOS)         │
-└─────────────────────────────────────────────────────────┘
-```
+**Sur 11 seeds** (1 à 10 et 42), la fusion termine le rang sans en sortir dans **11 cas sur 11**
+(erreur max ≤ 54 cm, limite 75 cm). Son erreur latérale RMS va de 13,0 à 30,8 cm, **médiane
+18,1 cm** : l'objectif fixé par l'[ADR 0005](docs/decisions/0005-feature-cible.md) (RMS < 15 cm)
+n'est atteint que pour 3 seeds sur 11. Il est conservé tel quel. Le plancher vient du **biais du
+GPS** (marche aléatoire de 0,02 m/√s, soit ≈ 26 cm en moyenne sur 170 s) : le GPS étant le seul
+capteur absolu, aucun filtre ne peut l'observer. Analyse complète dans la section « Résultat
+mesuré » de l'ADR 0005.
 
-Detailed architecture: [docs/architecture.md](docs/architecture.md)
+## Démarrage rapide
 
----
-
-## 🚀 Quick start
-
-### Prerequisites
-
-- Linux (Ubuntu 22.04+) or WSL2 on Windows
-- CMake ≥ 3.20
-- C++17 compiler (gcc 11+ or clang 14+)
-- Ninja (recommended)
+Prérequis : CMake ≥ 3.20, Ninja, un compilateur C++20 (gcc 11+ ou clang 14+ ; sous Windows,
+MinGW-w64 de WinLibs), Python 3.10+, Git. MuJoCo 3.16 et GoogleTest sont téléchargés par CMake.
 
 ```bash
-sudo apt-get install build-essential cmake ninja-build
+git clone https://github.com/GilS97/FieldNav.git
+cd FieldNav
+python -m venv .venv
+.venv/Scripts/python -m pip install -r scripts/requirements.txt   # Linux : .venv/bin/python
 ```
 
-### Build and test
+1. **Compiler et tester**
 
-```bash
-git clone https://github.com/YOUR-USER/fieldnav.git
-cd fieldnav
+   ```bash
+   cmake --preset debug
+   cmake --build --preset debug
+   ctest --preset debug
+   ```
 
-# Configure (Debug build)
-cmake --preset debug
+2. **Lancer une mission** (≈ 6 s)
 
-# Build
-cmake --build build/debug
+   ```bash
+   build/debug/apps/fieldnav_run --pose-source fusion --seed 42 --gps-outage 80,90 --out run.csv
+   ```
 
-# Run all tests
-ctest --test-dir build/debug --output-on-failure
-```
+3. **Tracer les figures**
 
-### Build with sanitizers (recommended during development)
+   ```bash
+   .venv/Scripts/python scripts/plot_run.py run.csv
+   ```
 
-```bash
-cmake --preset asan
-cmake --build build/asan
-ctest --test-dir build/asan --output-on-failure
-```
+Pour comparer vérité, odométrie et fusion : `bash scripts/run_matrix.sh build/debug`, puis
+`plot_run.py --compare results/<date>/row_straight_*_seed42.csv`.
+Options de `fieldnav_run` : `--help`. Codes retour : 0 ok, 1 sortie de rang, 2 configuration.
 
-### Available CMake presets
-
-| Preset    | Compiler | Build type | Sanitizers     | Purpose                |
-|-----------|----------|------------|----------------|------------------------|
-| `debug`   | gcc      | Debug      | none           | Day-to-day debugging   |
-| `release` | gcc      | Release    | none           | Performance testing    |
-| `asan`    | clang    | Debug      | ASan + UBSan   | Catching memory bugs   |
-
----
-
-## 📁 Project structure
+## Architecture
 
 ```
-fieldnav/
-├── c_legacy/        Phase 1: dynamic matrix library in C (educational)
-├── libs/sensor_utils/  Statistiques header-only (C++20) : rms, maxAbs. Recréé : la version de FieldTelemetry (gelé le 2026-10-20) est perdue, voir ADR 0004
-├── core/            Phase 2: C++17 core types (Pose, Quaternion, ...)
-├── filters/         Phase 3: EKF, UKF, Particle Filter (stub)
-├── ros2_ws/         Phase 4: ROS 2 nodes (stub)
-├── embedded/        Phase 5: STM32 firmware (stub)
-├── cmake/           CMake helper modules
-├── docs/            Architecture, ADRs, tutorials
-└── .github/         CI/CD workflows
+          ┌──────────────── simulation MuJoCo (500 Hz) ────────────────┐
+          │  scenes/row_straight.xml : robot LAFVIN 4WD + rang de 50 m  │
+          └──────┬───────────────────────────────────────┬─────────────┘
+       roues mesurées                             position vraie
+                 │                                       │
+     sensors::WheelNoise (±2 %)              sensors::GpsSim (σ 1 m, biais,
+                 │                            pertes 20 %, trou GNSS)
+     odometry::wheelsToTwist → (v, ω)                    │
+                 │                                       │
+     odometry::DiffDriveOdometry (Euler) ──► estimation::ComplementaryFuser (α = 0,05)
+                                                         │ pose estimée
+                                   path::Path (erreur latérale, lookahead)
+                                                         │
+                                   control::purePursuit (50 Hz) → (v, ω)
+                                                         │
+                                   odometry::twistToWheels → consignes des roues ──► simulation
+                                                         │
+                                   telemetry::TelemetryWriter (10 Hz, CSV / JSONL)
 ```
 
----
+| Dossier | Rôle |
+|---|---|
+| `src/odometry/` | pose 2D, odométrie différentielle (Euler), cinématique roues ↔ (v, ω) |
+| `src/sensors/` | bruit des roues, GPS simulé (biais en marche aléatoire, pertes, trou GNSS) |
+| `src/estimation/` | fusion complémentaire odométrie + GPS (corrige x et y, jamais le cap) |
+| `src/path/` | référence du rang, erreur latérale signée, point visé |
+| `src/control/` | pure pursuit (κ = 2 sin α / L_d) |
+| `src/sim/` | simulation MuJoCo du robot (pose vraie, vitesses de roues) |
+| `src/mission/`, `apps/` | boucle complète et programme `fieldnav_run` |
+| `src/telemetry/` | télémétrie, format décrit dans [docs/telemetry_format.md](docs/telemetry_format.md) |
+| `libs/sensor_utils/` | statistiques (RMS, max) en C++20 |
+| `scenes/`, `data/`, `scripts/` | scènes générées, trajectoires de référence, outils Python |
 
-## 🗺️ Roadmap
+Reproductible : tout l'aléa passe par des `std::mt19937` seedés ; même seed, même télémétrie
+(octet pour octet sur une même plateforme).
 
-- [x] **v0.1** Phase 1 — Bootstrap (June 2026)
-- [ ] **v0.2** Phase 2 — C++ core types (Sep 2026)
-- [ ] **v0.3** Phase 3 — Filters (Jan 2027)
-- [ ] **v0.4** Phase 4 — ROS 2 integration (Apr 2027)
-- [ ] **v0.5** Phase 5 — Embedded firmware (May 2027)
-- [ ] **v1.0** Phase 6 — M2 paper release (Jun 2027)
+## Limites connues
 
----
+- Le rang courbe (rayon 100 m) est générable (`scripts/gen_row_scene.py --radius 100`) mais pas
+  encore validé en boucle fermée.
+- Le robot ne fait pas demi-tour en bout de rang (hors périmètre jusqu'en 2027).
+- Les dimensions du châssis sont celles d'un kit LAFVIN standard, pas encore mesurées sur le robot.
 
-## 🤝 Contributing
+## Licence
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for code style, branching strategy,
-and PR process.
-
----
-
-## 📜 License
-
-Apache License 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 — voir [LICENSE](LICENSE).

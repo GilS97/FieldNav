@@ -3,6 +3,8 @@
 ## Statut
 
 Accepté — 1er novembre 2026 (planning recalé d'une semaine le même jour)
+Amendé — 27 novembre 2026 : livrable recalé au 1er décembre ; résultat mesuré de la métrique
+(section « Résultat mesuré »).
 
 ## Contexte
 
@@ -57,3 +59,29 @@ lourde.
 - ⚠️ Le planning suppose environ une tâche de 50 minutes par jour jusqu'au 16 novembre.
   Mitigation : si un jalon glisse encore, la vidéo passe en décembre plutôt que de couper la
   feature.
+
+## Résultat mesuré (27 novembre 2026)
+
+Mesuré avec `fieldnav_run` (rang droit de 50 m, GPS σ = 1 m, 20 % de pertes, trou GNSS de 80 à
+90 s, α = 0,05, lookahead 0,8 m), erreur latérale **vraie** RMS sur toute la mission :
+
+| Pose donnée au pilote | Seed 42 | 11 seeds (1 à 10 et 42) |
+|---|---|---|
+| vérité terrain | 0,0 cm | — |
+| odométrie seule | 34,8 cm, sortie de rang à 43,7 m | — |
+| fusion | 14,4 cm (max 30,9 cm) | médiane 18,1 cm (13,0 à 30,8 cm) ; 3 seeds sur 11 sous 15 cm ; 0 sortie de rang (max ≤ 54 cm) |
+
+**L'objectif RMS < 15 cm n'est pas atteint en médiane.** Il est conservé tel quel : le déplacer
+après la mesure ôterait toute valeur à la métrique. Ce qui est atteint : la fusion termine le rang
+dans tous les cas, là où l'odométrie seule en sort.
+
+**Cause identifiée.** Le GPS simulé porte un biais en marche aléatoire (0,02 m/√s), soit
+0,02·√170 ≈ 26 cm d'écart-type au bout des 170 s du rang. Le GPS étant le seul capteur absolu,
+aucun filtre (complémentaire ou de Kalman) ne peut séparer ce biais de la position : il passe dans
+l'estimée. Faire varier α (0,02 à 0,1) et le lookahead (0,8 à 1,5 m) ne descend pas sous ce
+plancher (12 à 21 cm selon la seed).
+
+**Conséquence.** Les expériences de décembre mesureront l'erreur latérale en fonction de σ_GPS,
+du taux de pertes, de la durée du trou **et de l'intensité du biais**, sur un nombre de seeds
+suffisant pour donner médiane et dispersion. Le chiffre du mémoire sera une distribution, pas une
+seed.
