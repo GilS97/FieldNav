@@ -50,7 +50,8 @@ TEST(Mission, TruthFollowsTheRowPerfectly) {
 
 TEST(Mission, FusionCompletesTheRowWithGnssOutage) {
     // Conditions de la métrique (CLAUDE.md) : GPS σ = 1 m, 20 % de pertes, trou de 10 s au
-    // milieu du rang (≈ 85 s à 0,3 m/s). Mesuré le 27 nov. 2026 (seed 42) : RMS 0,149 m.
+    // milieu du rang (≈ 85 s à 0,3 m/s). Mesuré le 27 nov. 2026 (seed 42) : RMS 0,144 m, max 0,309
+    // m.
     auto c = baseConfig(fm::PoseSource::Fusion);
     c.gps.outage_start = 80.0;
     c.gps.outage_end = 90.0;
