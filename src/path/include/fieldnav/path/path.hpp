@@ -40,6 +40,10 @@ public:
     // chemin : le dernier point.
     [[nodiscard]] Point2D lookahead(const odometry::Pose2D& pose, double distance);
 
+    // Abscisse curviligne de la projection du robot sur le chemin (m) : la distance parcourue le
+    // long du rang. Sert à savoir quand le robot est arrivé au bout.
+    [[nodiscard]] double arcLength(const odometry::Pose2D& pose) { return project(pose).s; }
+
     [[nodiscard]] double length() const noexcept { return points_.back().s; }
     [[nodiscard]] const std::vector<RefPoint>& points() const noexcept { return points_; }
 

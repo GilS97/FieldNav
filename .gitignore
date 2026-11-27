@@ -73,3 +73,6 @@ datasets/*
 !datasets/download.sh
 !datasets/.gitkeep
 !datasets/README.md
+
+# Télémétrie des runs (scripts/run_matrix.sh) : régénérable, non versionnée.
+results/
