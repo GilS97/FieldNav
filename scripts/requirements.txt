@@ -4,3 +4,6 @@
 #   .venv/bin/python -m pip install -r scripts/requirements.txt       (Linux)
 # Même version que la bibliothèque C téléchargée par cmake/FetchMuJoCo.cmake.
 mujoco==3.16.0
+# Figures (scripts/plot_run.py).
+pandas==2.3.3
+matplotlib==3.10.7
